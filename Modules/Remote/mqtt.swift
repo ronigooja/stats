@@ -12,9 +12,46 @@ private struct MQTTMetrics: Decodable {
         let rx_bytes_per_second: Double
         let tx_bytes_per_second: Double
     }
+    struct DiskEntry: Decodable {
+        let value: RemoteDiskEntry?
+
+        private enum CodingKeys: String, CodingKey {
+            case mount, used_bytes, total_bytes
+        }
+
+        init(from decoder: Decoder) throws {
+            guard let container = try? decoder.container(keyedBy: CodingKeys.self),
+                  let mount = try? container.decode(String.self, forKey: .mount),
+                  let used = try? container.decode(Double.self, forKey: .used_bytes),
+                  let total = try? container.decode(Double.self, forKey: .total_bytes),
+                  used.isFinite, total.isFinite, total > 0 else {
+                self.value = nil
+                return
+            }
+            let trimmedMount = mount.trimmingCharacters(in: .whitespacesAndNewlines)
+            self.value = trimmedMount.isEmpty ? nil : RemoteDiskEntry(mount: trimmedMount, used: min(max(used, 0), total), total: total)
+        }
+    }
+    struct Disks: Decodable {
+        let entries: [RemoteDiskEntry]
+
+        init(from decoder: Decoder) throws {
+            guard var container = try? decoder.unkeyedContainer() else {
+                self.entries = []
+                return
+            }
+            var entries: [RemoteDiskEntry] = []
+            while !container.isAtEnd, entries.count < 32 {
+                let entry = try container.decode(DiskEntry.self)
+                if let value = entry.value { entries.append(value) }
+            }
+            self.entries = entries
+        }
+    }
     let cpu_percent: Double?
     let memory: Capacity?
     let disk: Capacity?
+    let disks: Disks?
     let network: Network?
     let load_1m: Double?
     let uptime_seconds: Double?
@@ -272,7 +309,7 @@ internal final class MQTTSubscriber {
             }
             return RemoteMachine(id: id, name: value.hostname, online: value.online, lastSeenTS: value.metrics?.timestamp,
                                  platform: value.platform,
-                                 modules: RemoteModules(cpu: cpu, ram: ram, disk: disk, network: network,
+                                 modules: RemoteModules(cpu: cpu, ram: ram, disk: disk, disks: value.metrics?.disks?.entries, network: network,
                                                         load: value.metrics?.load_1m.flatMap { $0.isFinite ? $0 : nil },
                                                         uptime: value.metrics?.uptime_seconds.flatMap { $0.isFinite ? $0 : nil }))
         }

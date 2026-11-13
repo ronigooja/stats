@@ -42,7 +42,14 @@ public struct RemoteMachine: Codable {
         if let load = self.modules?.load {
             lines.append("\(localizedString("Load average")) (1m): \(String(format: "%.2f", load))")
         }
-        if let disk = self.modules?.disk {
+        if let disks = self.modules?.disks, disks.count >= 2 {
+            for disk in disks.prefix(8) {
+                lines.append("\(disk.mount): \(Units(bytes: Int64(disk.used)).getReadableMemory()) / \(Units(bytes: Int64(disk.total)).getReadableMemory())")
+            }
+            if disks.count > 8 {
+                lines.append(String(format: localizedString("+%d more"), disks.count - 8))
+            }
+        } else if let disk = self.modules?.disk {
             lines.append("\(localizedString("Disk")): \(Units(bytes: Int64(disk.used)).getReadableMemory()) / \(Units(bytes: Int64(disk.total)).getReadableMemory())")
         }
         if let ram = self.modules?.ram {
@@ -52,7 +59,6 @@ public struct RemoteMachine: Codable {
             let days = Int(uptime) / 86400, hours = Int(uptime) % 86400 / 3600, minutes = Int(uptime) % 3600 / 60
             lines.append("\(localizedString("Uptime")): \(days > 0 ? "\(days)d " : "")\(hours)h \(minutes)m")
         }
-        if let seen = self.lastSeenTS { lines.append("\(localizedString("Last update")): \(seen)") }
         return lines.joined(separator: "\n")
     }
 }
@@ -61,6 +67,7 @@ public struct RemoteModules: Codable {
     public let cpu: [String: RemoteCPUModule]?
     public let ram: RemoteRAMModule?
     public let disk: RemoteDiskModule?
+    public let disks: [RemoteDiskEntry]?
     public let network: RemoteNetworkModule?
     public let load: Double?
     public let uptime: Double?
@@ -81,6 +88,12 @@ public struct RemoteModules: Codable {
         guard let disk = self.disk, disk.total > 0 else { return nil }
         return disk.used / disk.total
     }
+}
+
+public struct RemoteDiskEntry: Codable {
+    public let mount: String
+    public let used: Double
+    public let total: Double
 }
 
 public struct RemoteDiskModule: Codable {
