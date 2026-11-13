@@ -75,7 +75,7 @@ enum WiFiLocationAuthorization: String, Codable {
     case notDetermined, denied, authorized
 }
 
-public struct Network_Usage: Codable, RemoteType {
+public struct Network_Usage: Codable, RemoteMetrics {
     var bandwidth: Bandwidth = Bandwidth()
     var total: Bandwidth = Bandwidth()
     
@@ -105,10 +105,8 @@ public struct Network_Usage: Codable, RemoteType {
         self.wifiDetails.reset()
     }
     
-    public func remote() -> String? {
-        let addr = "\(self.laddr.v4 ?? ""),\(self.laddr.v6 ?? ""),\(self.raddr.v4 ?? ""),\(self.raddr.v6 ?? "")"
-        let string = "1,\(self.interface?.BSDName ?? ""),1,\(self.bandwidth.download),\(self.bandwidth.upload),\(addr)$"
-        return string
+    public func apply(to reporter: MQTTReporter) {
+        reporter.set(rx: Double(self.bandwidth.download), tx: Double(self.bandwidth.upload))
     }
 }
 

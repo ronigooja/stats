@@ -19,13 +19,12 @@ brew install stats
 ```
 The Homebrew cask installs the upstream app, not this fork. Use the manual download above for fork releases.
 
-### Headless (SSH)
-To install Stats remotely over SSH and set it up as a remote monitoring agent, run:
-```bash
-curl -fsSL https://raw.githubusercontent.com/ronigooja/stats/master/Kit/scripts/install.sh | bash
-```
-The script installs the app, enables the Remote module and prints a URL with an authorization code - open it on any device and sign in to your System Stats account to authorize the machine. After that Stats starts streaming metrics to your account and is registered to launch automatically at login and restart if it stops.
-The Mac needs an active user session (a locked screen is fine) to run the app; on a fully headless machine Stats will start at the next login.
+### Remote monitoring (self-hosted MQTT)
+The Remote module shows machines that publish to your own MQTT 3.1.1 broker over TLS (default port 8883). It has no account or cloud service.
+
+- **Viewing:** Remote settings > Broker. Set host, port and credentials, then enable "Show machines". Stats subscribes to `stats/v1/machines/+/{info,metrics,status}`.
+- **Reporting this Mac:** Remote settings > This Mac. Turn on "Report this Mac", choose a device ID and an interval (default 1 min). It is off by default.
+- **Linux machines:** use [stats-linux](https://github.com/ronigooja/stats-linux), which publishes the same topics.
 
 ### Fork updates
 For this fork, all in-app update checks use [GitHub Releases](https://github.com/ronigooja/stats/releases) directly, with no upstream fallback. Publish a non-draft, non-prerelease release with a `Stats.dmg` asset and an increasing `vMAJOR.MINOR.PATCH` tag. The mounted image must contain `Stats.app`, including its bundled `updater.sh` script. In-app installation requires a valid app signature and the same signing Team ID as the currently installed app; switching from an upstream-signed build to a differently signed fork requires manual installation. Ad-hoc or unsigned builds cannot use this automatic installation path.

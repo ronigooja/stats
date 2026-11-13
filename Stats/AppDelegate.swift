@@ -86,8 +86,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         
         NotificationCenter.default.addObserver(self, selector: #selector(listenForAppPause), name: .pause, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handleToggleSettings), name: .toggleSettings, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(handleRemoteAuthenticated), name: .remoteAuthenticated, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(handleRemoteUpdate), name: .remoteUpdate, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handlePopupVisibility), name: .popupVisibilityChanged, object: nil)
         
         NSEvent.addGlobalMonitorForEvents(matching: [.keyDown, .flagsChanged]) { [weak self] event in
@@ -105,7 +103,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
     func applicationWillTerminate(_ aNotification: Notification) {
         modules.forEach{ $0.terminate() }
         DB.shared.flush()
-        SystemStats.shared.terminate()
+        MQTTReporter.shared.stop()
     }
     
     func applicationDidUpdate(_ notification: Notification) {
@@ -146,18 +144,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
     @objc private func handleToggleSettings(_ notification: Notification) {
         let module = notification.userInfo?["module"] as? String
         self.ensureSettingsWindow().open(module: module)
-    }
-    
-    @objc private func handleRemoteAuthenticated() {
-        DispatchQueue.main.async {
-            self.checkIfShouldShowSupportWindow()
-        }
-    }
-    
-    @objc private func handleRemoteUpdate() {
-        DispatchQueue.main.async {
-            self.checkForNewVersion(silent: true)
-        }
     }
     
     @objc private func handlePopupVisibility(_ notification: Notification) {

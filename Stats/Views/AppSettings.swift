@@ -57,12 +57,9 @@ class ApplicationSettings: NSStackView {
     
     private var updateSelector: NSPopUpButton?
     private var startAtLoginBtn: NSSwitch?
-    private var remoteControlBtn: NSSwitch?
-    private var remoteUpdatesBtn: NSSwitch?
     
     private var combinedModulesView: PreferencesSection?
     private var fanHelperView: PreferencesSection?
-    private var remoteView: PreferencesSection?
     
     private var updateWindow: UpdateWindow?
     private let moduleSelector: ModuleSelectorView = ModuleSelectorView()
@@ -77,7 +74,6 @@ class ApplicationSettings: NSStackView {
     private var CPUsTest: CPUStressTest = CPUStressTest(type: .super)
     private var GPUTest: GPUStressTest? = GPUStressTest()
     
-    private var planField: NSTextField?
     
     init() {
         super.init(frame: NSRect(x: 0, y: 0, width: Constants.Settings.width, height: Constants.Settings.height))
@@ -154,36 +150,6 @@ class ApplicationSettings: NSStackView {
         scrollView.stackView.addArrangedSubview(self.combinedModulesView!)
         self.updateCombinedModulesSettings()
         
-        self.remoteControlBtn = switchView(
-            action: #selector(self.toggleRemoteControlState),
-            state: SystemStats.shared.control
-        )
-        self.remoteUpdatesBtn = switchView(
-            action: #selector(self.toggleRemoteUpdateState),
-            state: SystemStats.shared.update
-        )
-        self.planField = textView(SystemStats.shared.plan?.rawValue.capitalized ?? "Free")
-        self.remoteView = PreferencesSection(title: "System Stats", [
-            PreferencesRow(localizedString("Authorization"), component: buttonView(#selector(self.loginToRemote), text: localizedString("Sign in"))),
-            PreferencesRow(localizedString("Identificator"), component: textView(SystemStats.shared.id.uuidString)),
-            PreferencesRow(localizedString("Plan"), component: self.planField!),
-            PreferencesRow(localizedString("Monitoring"), component: switchView(
-                action: #selector(self.toggleRemoteMonitoringState),
-                state: SystemStats.shared.monitoring
-            )),
-            PreferencesRow(id: "monitoring_modules", component: buttonView(
-                #selector(self.selectRemoteMonitoringModules), text: localizedString("Modules")
-            )),
-            PreferencesRow(localizedString("Control"), component: self.remoteControlBtn!),
-            PreferencesRow(localizedString("Update"), component: self.remoteUpdatesBtn!),
-            PreferencesRow(component: buttonView(#selector(self.logoutFromRemote), text: localizedString("Sign out"))),
-            PreferencesRow(component: buttonView(#selector(self.deregisterFromRemote), text: localizedString("Deregister")))
-        ])
-        scrollView.stackView.addArrangedSubview(self.remoteView!)
-        for row in 1...8 {
-            self.remoteView?.setRowVisibility(row, newState: false)
-        }
-        
         scrollView.stackView.addArrangedSubview(PreferencesSection(title: localizedString("Settings"), [
             PreferencesRow(
                 localizedString("Export settings"),
@@ -239,7 +205,6 @@ class ApplicationSettings: NSStackView {
         #endif
         
         NotificationCenter.default.addObserver(self, selector: #selector(self.toggleUninstallHelperButton), name: .fanHelperState, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(self.handleRemoteState), name: .remoteState, object: nil)
     }
     
     required init?(coder: NSCoder) {
@@ -248,15 +213,10 @@ class ApplicationSettings: NSStackView {
     
     deinit {
         NotificationCenter.default.removeObserver(self, name: .fanHelperState, object: nil)
-        NotificationCenter.default.removeObserver(self, name: .remoteState, object: nil)
     }
     
     internal func viewWillAppear() {
         self.startAtLoginBtn?.state = LaunchAtLogin.isEnabled ? .on : .off
-        self.remoteControlBtn?.state = SystemStats.shared.control ? .on : .off
-        
-        self.planField?.stringValue = SystemStats.shared.plan?.rawValue.capitalized ?? "Free"
-        self.setRemoteSettings(SystemStats.shared.isAuthorized)
         
         var idx = self.updateSelector?.indexOfSelectedItem ?? 0
         if let items = self.updateSelector?.menu?.items {
@@ -502,95 +462,6 @@ class ApplicationSettings: NSStackView {
         } else {
             test.start()
             self.GPUButton?.title = localizedString("Stop")
-        }
-    }
-    
-    @objc private func toggleRemoteMonitoringState(_ sender: NSButton) {
-        SystemStats.shared.monitoring = sender.state == NSControl.StateValue.on
-        self.remoteView?.setRowVisibility("monitoring_modules", newState: SystemStats.shared.monitoring)
-    }
-    @objc private func selectRemoteMonitoringModules(_ sender: NSButton) {
-        let supported = [ModuleType.CPU, .GPU, .RAM, .disk, .sensors, .network, .battery].map { $0.stringValue }
-        let list = modules.filter { $0.available && $0.enabled && supported.contains($0.name) }
-        let menu = NSMenu()
-        menu.autoenablesItems = false
-        
-        list.forEach { module in
-            let item = NSMenuItem(title: localizedString(module.name), action: #selector(self.toggleRemoteMonitoringModule), keyEquivalent: "")
-            item.target = self
-            item.representedObject = module.name
-            item.state = SystemStats.shared.isMonitoringEnabled(for: module.name) ? .on : .off
-            menu.addItem(item)
-        }
-        if list.isEmpty {
-            let item = NSMenuItem(title: localizedString("None"), action: nil, keyEquivalent: "")
-            item.isEnabled = false
-            menu.addItem(item)
-        }
-        
-        menu.popUp(positioning: nil, at: NSPoint(x: 0, y: sender.bounds.height), in: sender)
-    }
-    @objc private func toggleRemoteMonitoringModule(_ sender: NSMenuItem) {
-        guard let module = sender.representedObject as? String else { return }
-        let enabled = sender.state != .on
-        SystemStats.shared.setMonitoring(enabled, for: module)
-        sender.state = enabled ? .on : .off
-    }
-    @objc private func toggleRemoteControlState(_ sender: NSButton) {
-        if sender.state == .on {
-            let alert = NSAlert()
-            alert.messageText = localizedString("Warning")
-            alert.informativeText = localizedString("It is not recommended to enable remote control unless you know what you are doing.")
-            alert.alertStyle = .warning
-            alert.addButton(withTitle: localizedString("Enable"))
-            alert.addButton(withTitle: localizedString("Cancel"))
-            let response = alert.runModal()
-            if response == .alertFirstButtonReturn {
-                SystemStats.shared.control = true
-            } else {
-                sender.state = .off
-            }
-        } else {
-            SystemStats.shared.control = false
-        }
-    }
-    @objc private func toggleRemoteUpdateState(_ sender: NSButton) {
-        SystemStats.shared.update = sender.state == NSControl.StateValue.on
-    }
-    
-    @objc private func handleRemoteState(_ notification: Notification) {
-        guard let auth = notification.userInfo?["auth"] as? Bool else { return }
-        self.setRemoteSettings(auth)
-    }
-    
-    @objc private func loginToRemote() {
-        SystemStats.shared.login()
-    }
-    
-    @objc private func logoutFromRemote() {
-        SystemStats.shared.logout()
-    }
-    
-    @objc private func deregisterFromRemote() {
-        let alert = NSAlert()
-        alert.messageText = localizedString("Deregister")
-        alert.informativeText = localizedString("Deregister text")
-        alert.alertStyle = .warning
-        alert.addButton(withTitle: localizedString("Yes"))
-        alert.addButton(withTitle: localizedString("No"))
-        
-        if alert.runModal() == .alertFirstButtonReturn {
-            SystemStats.shared.deregister()
-        }
-    }
-    
-    private func setRemoteSettings(_ auth: Bool) {
-        DispatchQueue.main.async {
-            for row in 1...8 {
-                self.remoteView?.setRowVisibility(row, newState: auth)
-            }
-            self.remoteView?.setRowVisibility(0, newState: !auth)
-            self.remoteView?.setRowVisibility("monitoring_modules", newState: auth && SystemStats.shared.monitoring)
         }
     }
     

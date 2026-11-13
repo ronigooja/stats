@@ -118,7 +118,7 @@ open class Reader<T: Codable>: NSObject, ReaderInternal_p {
         if let value {
             self.recordHistory(value)
             self.callbackHandler(value)
-            SystemStats.shared.send(key: moduleKey, value: value)
+            MQTTReporter.shared.update(value: value)
             if let ts = self.lastDBWrite, let interval = self.interval, Date().timeIntervalSince(ts) > interval * 10 {
                 DB.shared.insert(key: moduleKey, value: value)
                 self.lastDBWrite = Date()

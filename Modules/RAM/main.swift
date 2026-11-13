@@ -12,7 +12,7 @@
 import Cocoa
 import Kit
 
-public struct RAM_Usage: Codable, RemoteType {
+public struct RAM_Usage: Codable, RemoteMetrics {
     var total: Double
     var used: Double
     var free: Double
@@ -35,12 +35,8 @@ public struct RAM_Usage: Codable, RemoteType {
         get { Double((self.total - self.free) / self.total) }
     }
     
-    public func remote() -> String? {
-        guard let total = Int64(exactly: self.total),
-              let used = Int64(exactly: self.used),
-              let swap = Int64(exactly: self.swap.used) else { return nil }
-        let string = "\(total),\(used),,\(swap)$"
-        return string
+    public func apply(to reporter: MQTTReporter) {
+        reporter.set(ramUsed: self.used, ramTotal: self.total)
     }
 }
 

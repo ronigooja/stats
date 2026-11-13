@@ -82,13 +82,9 @@ public struct drive: Codable {
         Store.shared.bool(key: "Disk_\(self.uuid)_popup", defaultValue: true)
     }
     
-    public func remote() -> String {
-        let id = self.root ? disk_s.startupVolumeGroupID ?? self.uuid : self.uuid
-        return "\(id),\(self.size),\(self.size-self.free),,\(self.activity.read),\(self.activity.write)"
-    }
 }
 
-public class Disks: Codable, RemoteType {
+public class Disks: Codable, RemoteMetrics {
     private var queue: DispatchQueue = DispatchQueue(label: "eu.exelban.Stats.Disk.SynchronizedArray")
     private var _array: [drive] = []
     public var array: [drive] {
@@ -162,14 +158,9 @@ public class Disks: Codable, RemoteType {
         self.array[idx].smart = smart
     }
     
-    public func remote() -> String? {
-        let arr = self.array.filter({ !$0.removable })
-        var string = "\(arr.count)"
-        for v in arr {
-            string += ",\(v.remote())"
-        }
-        string += "$"
-        return string
+    public func apply(to reporter: MQTTReporter) {
+        guard let root = self.array.first(where: { $0.root }) ?? self.array.first(where: { !$0.removable }) else { return }
+        reporter.set(diskUsed: Double(max(root.size - root.free, 0)), diskTotal: Double(root.size))
     }
 }
 

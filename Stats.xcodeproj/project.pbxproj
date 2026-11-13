@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		4A05F9BD83C04F70BFFF7F37 /* Kit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 369463B2B7EA4AF0A895A9B6 /* Kit.swift */; };
-		5C038CF62D86EE8A00516809 /* SystemStats.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C038CF52D86EE8700516809 /* SystemStats.swift */; };
 		5C044F7A2B3DE6F3005F6951 /* portal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C044F792B3DE6F3005F6951 /* portal.swift */; };
 		5C0A2A8A292A5B4D009B4C1F /* SMJobBlessUtil.py in Resources */ = {isa = PBXBuildFile; fileRef = 5C0A2A89292A5B4D009B4C1F /* SMJobBlessUtil.py */; };
 		5C0A9CA22C467AA300EE6A89 /* widget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C0A9CA12C467AA300EE6A89 /* widget.swift */; };
@@ -96,6 +95,7 @@
 		5E0C63662FBE3F4E00D9BA3E /* settings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E0C63652FBE3F4E00D9BA3E /* settings.swift */; };
 		5E0C63682FBE5F0000D9BA3E /* reader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E0C63672FBE5F0000D9BA3E /* reader.swift */; };
 		5E0C63702FBE4A0000D9BA3E /* popup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E0C636F2FBE4A0000D9BA3E /* popup.swift */; };
+		A1B2C3D42FC0000000000004 /* MQTTReport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42FC0000000000003 /* MQTTReport.swift */; };
 		A1B2C3D42FC0000000000001 /* mqtt.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42FC0000000000002 /* mqtt.swift */; };
 		5E6DF2573007B23A00D696BD /* uninstall.sh in Copy Files */ = {isa = PBXBuildFile; fileRef = 5CFE494129265418000F2856 /* uninstall.sh */; };
 		5E828A003074086000DB0CA0 /* Icon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E8289FF3074085D00DB0CA0 /* Icon.swift */; };
@@ -548,7 +548,6 @@
 		47665544298DC92F00F7B709 /* sk */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = sk; path = sk.lproj/Localizable.strings; sourceTree = "<group>"; };
 		4921436D25319699000A1C47 /* ko */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ko; path = ko.lproj/Localizable.strings; sourceTree = "<group>"; };
 		4F92E6432D0F293100EA593F /* fi */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fi; path = fi.lproj/Localizable.strings; sourceTree = "<group>"; };
-		5C038CF52D86EE8700516809 /* SystemStats.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemStats.swift; sourceTree = "<group>"; };
 		5C044F792B3DE6F3005F6951 /* portal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = portal.swift; sourceTree = "<group>"; };
 		5C0A2A89292A5B4D009B4C1F /* SMJobBlessUtil.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = SMJobBlessUtil.py; sourceTree = "<group>"; };
 		5C0A9CA12C467AA300EE6A89 /* widget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = widget.swift; sourceTree = "<group>"; };
@@ -635,6 +634,7 @@
 		5E0C63652FBE3F4E00D9BA3E /* settings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = settings.swift; sourceTree = "<group>"; };
 		5E0C63672FBE5F0000D9BA3E /* reader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = reader.swift; sourceTree = "<group>"; };
 		5E0C636F2FBE4A0000D9BA3E /* popup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = popup.swift; sourceTree = "<group>"; };
+		A1B2C3D42FC0000000000003 /* MQTTReport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MQTTReport.swift; sourceTree = "<group>"; };
 		A1B2C3D42FC0000000000002 /* mqtt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = mqtt.swift; sourceTree = "<group>"; };
 		5E8289FF3074085D00DB0CA0 /* Icon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Icon.swift; sourceTree = "<group>"; };
 		5E8E7353308E1D1100126136 /* Stats.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = Stats.icon; sourceTree = "<group>"; };
@@ -1305,7 +1305,7 @@
 		9AA81547266A9ACA008C01D0 /* plugins */ = {
 			isa = PBXGroup;
 			children = (
-				5C038CF52D86EE8700516809 /* SystemStats.swift */,
+				A1B2C3D42FC0000000000003 /* MQTTReport.swift */,
 				9A2848022666AB2F00EC1F6D /* Store.swift */,
 				9A2848042666AB2F00EC1F6D /* Charts.swift */,
 				9A2848032666AB2F00EC1F6D /* SystemKit.swift */,
@@ -2287,7 +2287,7 @@
 				9A2847612666AA2700EC1F6D /* PieChart.swift in Sources */,
 				9A2847672666AA2700EC1F6D /* BarChart.swift in Sources */,
 				9A28477B2666AA5000EC1F6D /* popup.swift in Sources */,
-				5C038CF62D86EE8A00516809 /* SystemStats.swift in Sources */,
+				A1B2C3D42FC0000000000004 /* MQTTReport.swift in Sources */,
 				9A2848202666AB3600EC1F6D /* types.swift in Sources */,
 				9A28481E2666AB3600EC1F6D /* extensions.swift in Sources */,
 				9A2848092666AB3000EC1F6D /* Store.swift in Sources */,

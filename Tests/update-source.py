@@ -26,22 +26,12 @@ class UpdateSourceTests(unittest.TestCase):
         self.assertIn(f'https://github.com/{REPOSITORY}/releases/tag/\\(version.latest)', view)
         self.assertNotIn('exelban/stats', view)
 
-    def test_installer_latest_and_tagged_downloads_use_fork(self):
-        script = (ROOT / "Kit/scripts/install.sh").read_text()
-        repository = re.search(r'^REPO="([^"]+)"$', script, re.MULTILINE).group(1)
-        self.assertEqual(repository, REPOSITORY)
-        urls = re.findall(r'^\s*URL="([^"]+)"$', script, re.MULTILINE)
-        self.assertEqual([url.replace('$REPO', repository) for url in urls], [
-            f'https://github.com/{REPOSITORY}/releases/latest/download/Stats.dmg',
-            f'https://github.com/{REPOSITORY}/releases/download/v$VERSION/Stats.dmg',
-        ])
-
     def test_documented_downloads_use_fork(self):
         readme = (ROOT / "README.md").read_text()
         self.assertNotIn('https://github.com/exelban/stats/releases', readme)
-        self.assertNotIn('https://cdn.mac-stats.com/install.sh', readme)
+        self.assertNotIn('Kit/scripts/install.sh', readme)
+        self.assertNotIn('System Stats account', readme)
         self.assertIn(f'https://github.com/{REPOSITORY}/releases/latest/download/Stats.dmg', readme)
-        self.assertIn(f'https://raw.githubusercontent.com/{REPOSITORY}/master/Kit/scripts/install.sh', readme)
 
     def test_release_asset_and_signing_requirements_remain(self):
         updater = (ROOT / "Kit/plugins/Updater.swift").read_text()

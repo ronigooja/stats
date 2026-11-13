@@ -9,7 +9,7 @@
 import Cocoa
 import Kit
 
-public struct CPU_Load: Codable, RemoteType {
+public struct CPU_Load: Codable, RemoteMetrics {
     public var totalUsage: Double = 0
     var usagePerCore: [Double] = []
     var usageECores: Double? = nil
@@ -20,13 +20,8 @@ public struct CPU_Load: Codable, RemoteType {
     var userLoad: Double = 0
     var idleLoad: Double = 0
     
-    public func remote() -> String? {
-        var string = "1,1,\((self.totalUsage * 10000).rounded() / 10000),\(self.usagePerCore.count)"
-        for c in self.usagePerCore {
-            string += ",\((c * 10000).rounded() / 10000)"
-        }
-        string += "$"
-        return string
+    public func apply(to reporter: MQTTReporter) {
+        reporter.set(cpu: self.totalUsage)
     }
 }
 
@@ -43,14 +38,13 @@ public struct CPU_Limit: Codable {
     var speed: Int = 0
 }
 
-public struct CPU_AverageLoad: Codable, RemoteType {
+public struct CPU_AverageLoad: Codable, RemoteMetrics {
     var load1: Double = 0
     var load5: Double = 0
     var load15: Double = 0
     
-    public func remote() -> String? {
-        let string = "1,1,\(self.load1),\(self.load5),\(self.load15)$"
-        return string
+    public func apply(to reporter: MQTTReporter) {
+        reporter.set(load1: self.load1)
     }
 }
 
