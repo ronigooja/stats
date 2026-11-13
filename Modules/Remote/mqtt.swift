@@ -33,6 +33,7 @@ internal final class MQTTSubscriber {
     private var lastResponse = Date()
     private var connected = false
     private var attempts = 0
+    private var silence: DispatchWorkItem?
 
     func start() {
         guard self.stopped else { self.publish(); return }
@@ -46,6 +47,8 @@ internal final class MQTTSubscriber {
         self.generation += 1
         self.reconnect?.cancel()
         self.reconnect = nil
+        self.silence?.cancel()
+        self.silence = nil
         self.timer?.invalidate()
         self.timer = nil
         self.connection?.cancel()
@@ -98,6 +101,8 @@ internal final class MQTTSubscriber {
         self.connection?.cancel()
         self.connection = nil
         self.connected = false
+        self.silence?.cancel()
+        self.silence = nil
         self.timer?.invalidate()
         self.timer = nil
         for id in Array(self.machines.keys) { self.machines[id]?.online = false }
@@ -173,8 +178,8 @@ internal final class MQTTSubscriber {
     }
 
     private func suback(_ payload: [UInt8]) {
-        // 0x80 marks a rejected subscription, e.g. an account without read access.
         guard payload.count == 5, payload[0] == 0, payload[1] == 1 else { self.failed("Invalid SUBACK"); return }
+        // 0x80 marks a rejected subscription. Some brokers (Mosquitto) grant it anyway and just never deliver.
         guard payload.dropFirst(2).allSatisfy({ $0 <= 2 }) else {
             self.failed("Subscription denied: this account cannot read machines")
             return
@@ -182,6 +187,15 @@ internal final class MQTTSubscriber {
         self.connected = true
         self.attempts = 0
         self.onState?(self.machines.isEmpty ? "Connected · waiting for machines" : "Connected · \(self.machines.count) machines")
+        
+        // Retained info/status arrive right after subscribing, so silence means no data or no read access.
+        self.silence?.cancel()
+        let check = DispatchWorkItem { [weak self] in
+            guard let self, !self.stopped, self.connected, self.machines.isEmpty else { return }
+            self.onState?("Connected, but no machines received. Check that this account can read stats/v1/machines/#")
+        }
+        self.silence = check
+        DispatchQueue.main.asyncAfter(deadline: .now() + 8, execute: check)
     }
 
     private func incoming(_ header: UInt8, _ payload: [UInt8]) {
