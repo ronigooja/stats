@@ -141,6 +141,8 @@ private class RemoteItemView: NSStackView {
     private let cpuBar = BarChartView(horizontal: true)
     private let ramLabel = TextView()
     private let ramBar = BarChartView(horizontal: true)
+    private let diskLabel = TextView()
+    private let diskBar = BarChartView(horizontal: true)
     
     private let separator = RemoteSeparator()
     private var heightConstraint: NSLayoutConstraint?
@@ -150,10 +152,11 @@ private class RemoteItemView: NSStackView {
         
         super.init(frame: NSRect(x: 0, y: 0, width: Constants.Popup.width, height: 53))
         let height = self.heightAnchor.constraint(equalToConstant: 53)
-        height.priority = NSLayoutConstraint.Priority(999)
+        height.priority = .required
         height.isActive = true
         self.heightConstraint = height
         self.setContentHuggingPriority(.required, for: .vertical)
+        self.setContentCompressionResistancePriority(.required, for: .vertical)
         
         self.orientation = .vertical
         self.distribution = .fill
@@ -213,7 +216,17 @@ private class RemoteItemView: NSStackView {
         self.ramLabel.textColor = .secondaryLabelColor
         self.ramLabel.setContentHuggingPriority(.required, for: .horizontal)
         
-        [self.cpuBar, self.ramBar].forEach {
+        let diskIcon = NSImageView()
+        diskIcon.image = NSImage(systemSymbolName: "internaldrive", accessibilityDescription: localizedString("Disk"))
+        diskIcon.symbolConfiguration = NSImage.SymbolConfiguration(pointSize: 10, weight: .regular)
+        diskIcon.contentTintColor = .secondaryLabelColor
+        diskIcon.toolTip = localizedString("Disk")
+        
+        self.diskLabel.font = NSFont.systemFont(ofSize: 10, weight: .regular)
+        self.diskLabel.textColor = .secondaryLabelColor
+        self.diskLabel.setContentHuggingPriority(.required, for: .horizontal)
+        
+        [self.cpuBar, self.ramBar, self.diskBar].forEach {
             let height = $0.heightAnchor.constraint(equalToConstant: 4)
             height.priority = .defaultHigh
             height.isActive = true
@@ -230,8 +243,14 @@ private class RemoteItemView: NSStackView {
         ramGroup.alignment = .centerY
         ramGroup.spacing = 0
         
+        let diskGroup = NSStackView(views: [diskIcon, self.diskLabel, self.diskBar])
+        diskGroup.orientation = .horizontal
+        diskGroup.alignment = .centerY
+        diskGroup.spacing = 0
+        
         view.addArrangedSubview(cpuGroup)
         view.addArrangedSubview(ramGroup)
+        view.addArrangedSubview(diskGroup)
         
         return view
     }
@@ -255,6 +274,14 @@ private class RemoteItemView: NSStackView {
             self.ramLabel.stringValue = "—"
             self.ramBar.setValue(ColorValue(0))
         }
+        if let disk = machine.modules?.diskUsage {
+            self.diskLabel.stringValue = "\(Int(disk.rounded(toPlaces: 2) * 100))%"
+            self.diskBar.setValue(ColorValue(disk))
+        } else {
+            self.diskLabel.stringValue = "—"
+            self.diskBar.setValue(ColorValue(0))
+        }
+        self.toolTip = machine.details
     }
     
     public func setLast(_ isLast: Bool) {

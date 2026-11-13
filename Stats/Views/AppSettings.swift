@@ -494,7 +494,7 @@ private class ModuleSelectorView: NSStackView {
         }()
         
         var w = self.spacing
-        modules.filter({ $0.available }).sorted(by: { $0.combinedPosition < $1.combinedPosition }).forEach { (m: Module) in
+        modules.filter({ $0.available && !$0.standalone }).sorted(by: { $0.combinedPosition < $1.combinedPosition }).forEach { (m: Module) in
             let v = ModulePreview(id: m.name, icon: m.config.icon)
             self.addArrangedSubview(v)
             w += v.frame.width + self.spacing

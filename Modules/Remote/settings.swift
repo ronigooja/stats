@@ -77,7 +77,6 @@ internal class Settings: NSStackView, Settings_v {
         ]))
         
         self.addArrangedSubview(self.machinesList)
-        self.machinesList.heightAnchor.constraint(greaterThanOrEqualToConstant: 120).isActive = true
         
         self.status.stringValue = MQTTConfig.viewing ? localizedString("Connecting…") : localizedString("Disconnected")
         self.reportStatus.stringValue = MQTTConfig.reporting ? "" : localizedString("Reporting off")
@@ -158,7 +157,7 @@ internal class Settings: NSStackView, Settings_v {
     }
 }
 
-internal class RemoteList: ScrollableStackView {
+internal class RemoteList: NSStackView {
     public var toggleCallback: (() -> Void) = {}
     
     private var sections: [PreferencesSection] = []
@@ -166,11 +165,9 @@ internal class RemoteList: ScrollableStackView {
     public init() {
         super.init(frame: .zero)
         
-        self.autoresizingMask = [.width, .height]
-        
-        self.stackView.orientation = .vertical
-        self.stackView.alignment = .width
-        self.stackView.spacing = Constants.Settings.margin
+        self.orientation = .vertical
+        self.alignment = .width
+        self.spacing = Constants.Settings.margin
     }
     
     required init?(coder: NSCoder) {
@@ -179,14 +176,14 @@ internal class RemoteList: ScrollableStackView {
     
     fileprivate func reset() {
         for s in self.sections {
-            self.stackView.removeArrangedSubview(s)
+            self.removeArrangedSubview(s)
             s.removeFromSuperview()
         }
         self.sections.removeAll()
     }
     
     fileprivate func append(_ section: PreferencesSection) {
-        self.stackView.addArrangedSubview(section)
+        self.addArrangedSubview(section)
         self.sections.append(section)
     }
     

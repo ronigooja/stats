@@ -29,7 +29,7 @@ internal class CombinedView: NSObject, NSGestureRecognizerDelegate {
     }
     
     private var activeModules: [Module] {
-        modules.filter({ $0.enabled }).sorted(by: { $0.combinedPosition < $1.combinedPosition })
+        modules.filter({ $0.enabled && !$0.standalone }).sorted(by: { $0.combinedPosition < $1.combinedPosition })
     }
     
     private var combinedModulesPopup: Bool {

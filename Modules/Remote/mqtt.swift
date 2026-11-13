@@ -8,8 +8,16 @@ private struct MQTTMetrics: Decodable {
         let used_bytes: Double
         let total_bytes: Double
     }
+    struct Network: Decodable {
+        let rx_bytes_per_second: Double
+        let tx_bytes_per_second: Double
+    }
     let cpu_percent: Double?
     let memory: Capacity?
+    let disk: Capacity?
+    let network: Network?
+    let load_1m: Double?
+    let uptime_seconds: Double?
     let timestamp: String?
 }
 
@@ -254,8 +262,19 @@ internal final class MQTTSubscriber {
                 guard memory.total_bytes.isFinite, memory.used_bytes.isFinite, memory.total_bytes > 0 else { return nil }
                 return RemoteRAMModule(total: memory.total_bytes, used: min(max(memory.used_bytes, 0), memory.total_bytes))
             }
+            let disk = value.metrics?.disk.flatMap { disk -> RemoteDiskModule? in
+                guard disk.total_bytes.isFinite, disk.used_bytes.isFinite, disk.total_bytes > 0 else { return nil }
+                return RemoteDiskModule(total: disk.total_bytes, used: min(max(disk.used_bytes, 0), disk.total_bytes))
+            }
+            let network = value.metrics?.network.flatMap { net -> RemoteNetworkModule? in
+                guard net.rx_bytes_per_second.isFinite, net.tx_bytes_per_second.isFinite else { return nil }
+                return RemoteNetworkModule(rx: max(net.rx_bytes_per_second, 0), tx: max(net.tx_bytes_per_second, 0))
+            }
             return RemoteMachine(id: id, name: value.hostname, online: value.online, lastSeenTS: value.metrics?.timestamp,
-                                 platform: value.platform, modules: RemoteModules(cpu: cpu, ram: ram))
+                                 platform: value.platform,
+                                 modules: RemoteModules(cpu: cpu, ram: ram, disk: disk, network: network,
+                                                        load: value.metrics?.load_1m.flatMap { $0.isFinite ? $0 : nil },
+                                                        uptime: value.metrics?.uptime_seconds.flatMap { $0.isFinite ? $0 : nil }))
         }
         self.onSnapshot?(RemoteSnapshot(machines: machines))
     }

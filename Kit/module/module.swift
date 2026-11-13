@@ -87,6 +87,7 @@ open class Module {
     
     public var menuBar: MenuBar
     public var window: Window? = nil
+    public var standalone: Bool { self.menuBar.standalone }
     public let portal: Portal_p?
     
     public var name: String { config.name }
@@ -124,7 +125,8 @@ open class Module {
         settings: Settings_v? = nil,
         portal: Portal_p? = nil,
         notifications: NotificationsWrapper? = nil,
-        preview: PreviewWrapper? = nil
+        preview: PreviewWrapper? = nil,
+        standalone: Bool = false
     ) {
         self.moduleType = moduleType
         self.portal = portal
@@ -135,7 +137,7 @@ open class Module {
         self.popupView = popup
         self.notificationsView = notifications
         self.previewView = preview
-        self.menuBar = MenuBar(moduleName: self.config.name)
+        self.menuBar = MenuBar(moduleName: self.config.name, standalone: standalone)
         self.available = self.isAvailable()
         self.enabled = Store.shared.bool(key: "\(self.config.name)_state", defaultValue: self.config.defaultState)
         self.userDefaults?.set(self.enabled, forKey: "\(self.config.name)_state")

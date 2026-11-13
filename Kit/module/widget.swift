@@ -395,6 +395,9 @@ public class MenuBar {
     
     public var view: MenuBarView = MenuBarView()
     public var oneView: Bool = false
+    // A module that must keep its own menu bar item even when modules are combined.
+    public let standalone: Bool
+    private var combined: Bool { self.combinedModules && !self.standalone }
     public var activeWidgets: [SWidget] {
         self.widgets.filter({ $0.isActive })
     }
@@ -414,13 +417,14 @@ public class MenuBar {
         set { self.queue.sync { self._active = newValue } }
     }
     
-    init(moduleName: String) {
+    init(moduleName: String, standalone: Bool = false) {
         self.moduleName = moduleName
+        self.standalone = standalone
         self.queue = DispatchQueue(label: "eu.exelban.Stats.MenuBar.\(moduleName)")
-        self.oneView = Store.shared.bool(key: "\(self.moduleName)_oneView", defaultValue: self.oneView)
+        self.oneView = standalone || Store.shared.bool(key: "\(self.moduleName)_oneView", defaultValue: self.oneView)
         self.view.identifier = NSUserInterfaceItemIdentifier(rawValue: moduleName)
         
-        if self.combinedModules {
+        if self.combined {
             self.oneView = true
         } else {
             self.setupMenuBarItem(self.oneView)
@@ -466,7 +470,7 @@ public class MenuBar {
     }
     
     public func enable() {
-        if self.oneView && !self.combinedModules {
+        if self.oneView && !self.combined {
             self.setupMenuBarItem(true)
         }
         self.active = true
@@ -547,11 +551,11 @@ public class MenuBar {
             w.disable()
         }
         
-        if self.combinedModules {
+        if self.combined {
             self.oneView = true
             self.setupMenuBarItem(false)
         } else {
-            self.oneView = Store.shared.bool(key: "\(self.moduleName)_oneView", defaultValue: false)
+            self.oneView = self.standalone || Store.shared.bool(key: "\(self.moduleName)_oneView", defaultValue: false)
             self.setupMenuBarItem(self.oneView && self.active)
         }
         
