@@ -30,5 +30,16 @@ jobs:
             echo "skip=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - run: xcodebuild -scheme Stats -destination 'platform=macOS' -configuration Release archive CODE_SIGNING_ALLOWED=NO
+      - name: Build unsigned app
+        run: |
+          xcodebuild -scheme Stats -destination 'platform=macOS' -configuration Release -archivePath "${{ runner.temp }}/Stats.xcarchive" archive CODE_SIGNING_ALLOWED=NO
+          ditto -c -k --sequesterRsrc --keepParent "${{ runner.temp }}/Stats.xcarchive/Products/Applications/Stats.app" "${{ runner.temp }}/Stats.app.zip"
         if: steps.release.outputs.skip != 'true'
+
+      - uses: actions/upload-artifact@v4
+        if: steps.release.outputs.skip != 'true'
+        with:
+          name: Stats-unsigned
+          path: ${{ runner.temp }}/Stats.app.zip
+          if-no-files-found: error
+          retention-days: 7
