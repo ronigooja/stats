@@ -100,7 +100,11 @@ public class Updater {
     }
     
     private func fetchRelease(uri: URL, completion: @escaping (_ result: (tag: String, url: String)?, _ error: Error?) -> Void) {
-        let task = URLSession.shared.dataTask(with: uri) { data, _, error in
+        let task = URLSession.shared.dataTask(with: uri) { data, response, error in
+            if (response as? HTTPURLResponse)?.statusCode == 404 {
+                completion(nil, "No releases available")
+                return
+            }
             guard let data = data, error == nil else {
                 completion(nil, "no data")
                 return
@@ -109,15 +113,14 @@ public class Updater {
             do {
                 let jsonResponse = try JSONSerialization.jsonObject(with: data, options: [])
                 guard let jsonArray = jsonResponse as? [String: Any],
-                      let lastVersion = jsonArray["tag_name"] as? String,
-                      let assets = jsonArray["assets"] as? [[String: Any]],
-                      let asset = assets.first(where: {$0["name"] as? String == "\(self.appName).dmg"}),
-                      let downloadURL = asset["browser_download_url"] as? String else {
+                      let lastVersion = jsonArray["tag_name"] as? String, !lastVersion.isEmpty else {
                     completion(nil, "parse json")
                     return
                 }
                 
-                 completion((lastVersion, downloadURL), nil)
+                let releaseURL = jsonArray["html_url"] as? String
+                    ?? "https://github.com/ronigooja/stats/releases/tag/\(lastVersion)"
+                completion((lastVersion, releaseURL), nil)
             } catch let parsingError {
                 completion(nil, parsingError)
             }

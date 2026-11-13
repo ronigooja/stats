@@ -188,18 +188,7 @@ extension AppDelegate {
                 return
             }
             
-            if silent {
-                if let url = URL(string: version.url) {
-                    updater.download(url, completion: { path in
-                        updater.install(path: path) { error in
-                            if let error {
-                                showAlert("Error update Stats", error, .critical)
-                            }
-                        }
-                    })
-                }
-                return
-            }
+            // Unsigned builds always notify instead of silently invoking the signed installer.
             
             debug("show update view because new version of app found: \(version.latest)")
             

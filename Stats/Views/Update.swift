@@ -229,6 +229,12 @@ private class UpdateView: NSView {
     }
     
     @objc private func download() {
+        // Unsigned builds cannot use the signed in-app installer.
+        guard let urlString = self.version?.url, let url = URL(string: urlString) else { return }
+        if NSWorkspace.shared.open(url) { self.close() }
+    }
+
+    private func downloadAndInstallLegacy() {
         guard let urlString = self.version?.url, let url = URL(string: urlString) else {
             return
         }

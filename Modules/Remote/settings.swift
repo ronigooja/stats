@@ -144,7 +144,7 @@ internal class Settings: NSStackView, Settings_v {
             return
         }
         guard MQTTConfig.savePassword(self.password.stringValue) else {
-            self.status.stringValue = localizedString("Could not save the password in Keychain")
+            self.status.stringValue = localizedString("Could not save the password locally")
             return
         }
         Store.shared.set(key: "Remote_mqtt_host", value: host)

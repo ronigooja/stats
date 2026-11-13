@@ -202,15 +202,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         self.clickInNotification = true
         
         if let uri = response.notification.request.content.userInfo["url"] as? String {
-            debug("Downloading new version of app...")
+            debug("Opening release page...")
             if let url = URL(string: uri) {
-                updater.download(url, completion: { path in
-                    updater.install(path: path) { error in
-                        if let error {
-                            showAlert("Error update Stats", error, .critical)
-                        }
-                    }
-                })
+                DispatchQueue.main.async { NSWorkspace.shared.open(url) }
             }
         }
         

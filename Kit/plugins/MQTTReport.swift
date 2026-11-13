@@ -7,7 +7,8 @@
 
 import Foundation
 import Network
-import Security
+import CryptoKit
+import Darwin
 
 public enum MQTTConfig {
     public static let changed = Notification.Name("RemoteMQTTSettingsChanged")
@@ -45,32 +46,78 @@ public enum MQTTConfig {
         return String(String(scalars).prefix(64))
     }
 
-    private static var query: [String: Any] {
-        [kSecClass as String: kSecClassGenericPassword,
-         kSecAttrService as String: (Bundle.main.bundleIdentifier ?? "eu.exelban.Stats") + ".mqtt",
-         kSecAttrAccount as String: "password"]
+    private static let passwordKey = "Remote_mqtt_password_enc"
+    private static let passwordLock = NSLock()
+    private static var cachedPassword: String?
+
+    // Local encryption only prevents plaintext reading; this is not protection from the logged-in user.
+    // Ignore legacy Keychain items entirely: users must re-enter their password once.
+    private static func encryptionKey(create: Bool) throws -> SymmetricKey {
+        let manager = FileManager.default
+        let support = try manager.url(for: .applicationSupportDirectory, in: .userDomainMask,
+                                      appropriateFor: nil, create: true)
+        let directory = support.appendingPathComponent("Stats", isDirectory: true)
+        try manager.createDirectory(at: directory, withIntermediateDirectories: true,
+                                    attributes: [.posixPermissions: 0o700])
+        try manager.setAttributes([.posixPermissions: 0o700], ofItemAtPath: directory.path)
+        let url = directory.appendingPathComponent("mqtt.key")
+        if manager.fileExists(atPath: url.path) {
+            try manager.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
+            let data = try Data(contentsOf: url)
+            guard data.count == 32 else { throw CocoaError(.fileReadCorruptFile) }
+            return SymmetricKey(data: data)
+        }
+        guard create else { throw CocoaError(.fileNoSuchFile) }
+        let key = SymmetricKey(size: .bits256)
+        let data = key.withUnsafeBytes { Data($0) }
+        // Exclusive creation keeps permissions private from the first write and never overwrites a key.
+        let descriptor = open(url.path, O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW, mode_t(0o600))
+        guard descriptor >= 0 else { throw CocoaError(.fileWriteUnknown) }
+        let handle = FileHandle(fileDescriptor: descriptor, closeOnDealloc: true)
+        defer { try? handle.close() }
+        try handle.write(contentsOf: data)
+        return key
     }
+
     public static var password: String {
-        var query = self.query
-        query[kSecReturnData as String] = true
-        query[kSecMatchLimit as String] = kSecMatchLimitOne
-        var item: CFTypeRef?
-        guard SecItemCopyMatching(query as CFDictionary, &item) == errSecSuccess,
-              let data = item as? Data else { return "" }
-        return String(data: data, encoding: .utf8) ?? ""
+        self.passwordLock.lock()
+        defer { self.passwordLock.unlock() }
+        if let value = self.cachedPassword { return value }
+        // Cache failures too: no repeated disk reads/decrypts on reconnect or reporting paths.
+        self.cachedPassword = ""
+        let stored = Store.shared.string(key: self.passwordKey, defaultValue: "")
+        guard !stored.isEmpty, let data = Data(base64Encoded: stored) else { return "" }
+        do {
+            let key = try self.encryptionKey(create: false)
+            let box = try AES.GCM.SealedBox(combined: data)
+            let plaintext = try AES.GCM.open(box, using: key)
+            let value = String(data: plaintext, encoding: .utf8) ?? ""
+            self.cachedPassword = value
+            return value
+        } catch {
+            return ""
+        }
     }
+
     public static func savePassword(_ value: String) -> Bool {
+        self.passwordLock.lock()
+        defer { self.passwordLock.unlock() }
+        self.cachedPassword = nil
         if value.isEmpty {
-            let result = SecItemDelete(self.query as CFDictionary)
-            return result == errSecSuccess || result == errSecItemNotFound
+            Store.shared.remove(self.passwordKey)
+            self.cachedPassword = ""
+            return true
         }
-        let attributes: [String: Any] = [kSecValueData as String: Data(value.utf8),
-            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly]
-        let result = SecItemUpdate(self.query as CFDictionary, attributes as CFDictionary)
-        if result == errSecItemNotFound {
-            return SecItemAdd(self.query.merging(attributes) { _, new in new } as CFDictionary, nil) == errSecSuccess
+        do {
+            let key = try self.encryptionKey(create: true)
+            let box = try AES.GCM.seal(Data(value.utf8), using: key)
+            guard let combined = box.combined else { return false }
+            Store.shared.set(key: self.passwordKey, value: combined.base64EncodedString())
+            self.cachedPassword = value
+            return true
+        } catch {
+            return false
         }
-        return result == errSecSuccess
     }
 }
 
