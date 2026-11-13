@@ -101,7 +101,6 @@
 		5E828A003074086000DB0CA0 /* Icon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E8289FF3074085D00DB0CA0 /* Icon.swift */; };
 		5E8E7354308E1D1100126136 /* Stats.icon in Resources */ = {isa = PBXBuildFile; fileRef = 5E8E7353308E1D1100126136 /* Stats.icon */; };
 		5EC1B2E52E2FEAFB007042A6 /* UnitedWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EC1B2E42E2FEAFB007042A6 /* UnitedWidget.swift */; };
-		5EE5C0B93062FEA400E7DAB4 /* install.sh in Resources */ = {isa = PBXBuildFile; fileRef = 5EE5C0B83062FEA400E7DAB4 /* install.sh */; };
 		5EE8037F29C36BDD0063D37D /* portal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EE8037E29C36BDD0063D37D /* portal.swift */; };
 		8B3025000000000000000001 /* Bluetooth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B3025000000000000000002 /* Bluetooth.swift */; };
 		8B3025000000000000000003 /* Bluetooth.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9A11AACF266FD77F000C1C05 /* Bluetooth.framework */; };
@@ -639,7 +638,6 @@
 		5E8289FF3074085D00DB0CA0 /* Icon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Icon.swift; sourceTree = "<group>"; };
 		5E8E7353308E1D1100126136 /* Stats.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = Stats.icon; sourceTree = "<group>"; };
 		5EC1B2E42E2FEAFB007042A6 /* UnitedWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnitedWidget.swift; sourceTree = "<group>"; };
-		5EE5C0B83062FEA400E7DAB4 /* install.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = install.sh; sourceTree = "<group>"; };
 		5EE8037E29C36BDD0063D37D /* portal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = portal.swift; sourceTree = "<group>"; };
 		5EF7B23D30A1D8000045B7F1 /* generate-menu-bar-icon.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "generate-menu-bar-icon.sh"; sourceTree = "<group>"; };
 		62BA5F74254810C8009D0AC2 /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = es; path = es.lproj/Localizable.strings; sourceTree = "<group>"; };
@@ -1198,7 +1196,6 @@
 			isa = PBXGroup;
 			children = (
 				9A2848012666AB2F00EC1F6D /* updater.sh */,
-				5EE5C0B83062FEA400E7DAB4 /* install.sh */,
 				5CFE494129265418000F2856 /* uninstall.sh */,
 				5EF7B23D30A1D8000045B7F1 /* generate-menu-bar-icon.sh */,
 				9A46BF35266D6E17001A1117 /* i18n.py */,
@@ -2060,7 +2057,6 @@
 				9A46BF36266D6E17001A1117 /* i18n.py in Resources */,
 				9A2848082666AB3000EC1F6D /* updater.sh in Resources */,
 				5CFE494429265421000F2856 /* changelog.py in Resources */,
-				5EE5C0B93062FEA400E7DAB4 /* install.sh in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
