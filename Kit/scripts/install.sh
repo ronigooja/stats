@@ -7,7 +7,7 @@ AUTH_HOST="https://oauth.system-stats.com"
 API_HOST="https://api.system-stats.com"
 APP_HOST="https://app.system-stats.com"
 CLIENT_ID="stats"
-REPO="exelban/stats"
+REPO="ronigooja/stats"
 AGENT_LABEL="eu.exelban.Stats"
 UID_NUM="$(id -u)"
 

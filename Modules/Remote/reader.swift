@@ -1,67 +1,59 @@
-//
-//  reader.swift
-//  Remote
-//
-//  Created by Serhiy Mytrovtsiy on 20/05/2026.
-//  Using Swift 6.0.
-//  Running on macOS 26.5.
-//
-//  Copyright © 2020 Serhiy Mytrovtsiy. All rights reserved.
-//
-
 import Kit
 
 public final class DataReader: Reader<RemoteSnapshot> {
-    private var task: Task<Void, Never>?
-    private let taskLock = NSLock()
-    
+    private var mqtt: MQTTSubscriber?
+
     public override func setup() {
         self.interval = 60
+        self.value = nil
     }
-    
+
+    public override func start() {
+        super.start()
+        self.read()
+    }
+
     public override func read() {
-        guard SystemStats.shared.auth.hasCredentials() else {
-            self.cancelPendingRead()
-            self.callback(nil)
-            return
-        }
-        
-        self.taskLock.lock()
-        self.task?.cancel()
-        self.task = Task { [weak self] in
-            do {
-                async let machines = SystemStats.shared.fetchMachines()
-                async let hosts = SystemStats.shared.fetchHosts()
-                async let groups = SystemStats.shared.fetchGroups()
-                async let order = try? SystemStats.shared.fetchAccountOrder()
-                let (m, h, g, o) = try await (machines, hosts, groups, order)
-                guard !Task.isCancelled, SystemStats.shared.isAuthorized else { return }
-                self?.callback(RemoteSnapshot(machines: m, hosts: h, groups: g, order: o ?? RemoteAccountOrder(machines: [], hosts: [])))
-            } catch {
-                // Keep the last snapshot during temporary network/authentication failures.
+        DispatchQueue.main.async { [weak self] in
+            guard let self, self.active, MQTTSettings.enabled else { return }
+            if self.mqtt == nil {
+                let mqtt = MQTTSubscriber()
+                mqtt.onSnapshot = { [weak self, weak mqtt] snapshot in
+                    guard let self, let mqtt, self.mqtt === mqtt, self.active, MQTTSettings.enabled else { return }
+                    // Reader.callback forwards values to the official service. Keep broker data local.
+                    self.value = snapshot
+                    self.callbackHandler(snapshot)
+                }
+                mqtt.onState = { state in
+                    NotificationCenter.default.post(name: MQTTSettings.stateChanged, object: state)
+                }
+                self.mqtt = mqtt
             }
+            self.mqtt?.start()
         }
-        self.taskLock.unlock()
     }
-    
+
     public override func pause() {
         super.pause()
-        self.cancelPendingRead()
+        self.disconnect()
     }
-    
+
     public override func stop() {
         super.stop()
-        self.cancelPendingRead()
+        self.disconnect()
     }
-    
+
     public override func terminate() {
-        self.cancelPendingRead()
+        self.stop()
     }
-    
-    internal func cancelPendingRead() {
-        self.taskLock.lock()
-        self.task?.cancel()
-        self.task = nil
-        self.taskLock.unlock()
+
+    private func disconnect() {
+        let disconnect = { [weak self] in
+            self?.mqtt?.stop()
+            self?.mqtt = nil
+            self?.value = nil
+        }
+        if Thread.isMainThread { disconnect() }
+        else { DispatchQueue.main.sync(execute: disconnect) }
     }
 }

@@ -1,15 +1,15 @@
 # Stats
 
-<a href="https://github.com/exelban/stats/releases"><p align="center"><img src="https://cdn.mac-stats.com/assets/icon.png" width="120"></p></a>
+<a href="https://github.com/ronigooja/stats/releases"><p align="center"><img src="https://cdn.mac-stats.com/assets/icon.png" width="120"></p></a>
 
-[![Stats](https://cdn.mac-stats.com/assets/images/menus.png)](https://github.com/exelban/stats/releases)
-[![Stats](https://cdn.mac-stats.com/assets/images/popups.png)](https://github.com/exelban/stats/releases)
+[![Stats](https://cdn.mac-stats.com/assets/images/menus.png)](https://github.com/ronigooja/stats/releases)
+[![Stats](https://cdn.mac-stats.com/assets/images/popups.png)](https://github.com/ronigooja/stats/releases)
 
 macOS system monitor in your menu bar
 
 ## Installation
 ### Manual
-You can download the latest version [here](https://github.com/exelban/stats/releases/latest/download/Stats.dmg).
+You can download the latest version [here](https://github.com/ronigooja/stats/releases/latest/download/Stats.dmg).
 This will download a file called `Stats.dmg`. Open it and move the app to the application folder.
 
 ### Homebrew
@@ -17,14 +17,18 @@ To install it using Homebrew, open the Terminal app and type:
 ```bash
 brew install stats
 ```
+The Homebrew cask installs the upstream app, not this fork. Use the manual download above for fork releases.
 
 ### Headless (SSH)
 To install Stats remotely over SSH and set it up as a remote monitoring agent, run:
 ```bash
-curl -fsSL https://cdn.mac-stats.com/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/ronigooja/stats/master/Kit/scripts/install.sh | bash
 ```
 The script installs the app, enables the Remote module and prints a URL with an authorization code - open it on any device and sign in to your System Stats account to authorize the machine. After that Stats starts streaming metrics to your account and is registered to launch automatically at login and restart if it stops.
 The Mac needs an active user session (a locked screen is fine) to run the app; on a fully headless machine Stats will start at the next login.
+
+### Fork updates
+For this fork, all in-app update checks use [GitHub Releases](https://github.com/ronigooja/stats/releases) directly, with no upstream fallback. Publish a non-draft, non-prerelease release with a `Stats.dmg` asset and an increasing `vMAJOR.MINOR.PATCH` tag. The mounted image must contain `Stats.app`, including its bundled `updater.sh` script. In-app installation requires a valid app signature and the same signing Team ID as the currently installed app; switching from an upstream-signed build to a differently signed fork requires manual installation. Ad-hoc or unsigned builds cannot use this automatic installation path.
 
 ### Uninstall
 Run the uninstall script bundled with the app (requires administrator privileges to remove the SMC helper):
@@ -100,10 +104,10 @@ So, if your issue was closed without any response, most probably it already has 
 ### External API
 Stats does not collect any telemetry or analytics. The only external requests it makes are to the following APIs:
 
-- https://api.mac-stats.com – For update checks and retrieving the public IP address
-- https://api.github.com – Fallback for update checks
+- https://api.mac-stats.com – For retrieving the public IP address
+- https://api.github.com – For fork update checks
 
-Both of these APIs are used to check for updates. Additionally, an external request is required to obtain the public IP address. I do not want to use any third-party providers for retrieving the public IP address, so I use my own server for this purpose.
+Update checks use only the fork's GitHub Releases API, as described in [Fork updates](#fork-updates). The public IP lookup still uses the upstream server.
 
 If you have concerns about these requests, you have a few options:
 
