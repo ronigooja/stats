@@ -3,6 +3,9 @@ import Cocoa
 import Network
 import Kit
 
+// Byte counts come from the network and are later converted with Int64(); keep them far inside its range.
+private let maxBytes: Double = 1e18
+
 private struct MQTTMetrics: Decodable {
     struct Capacity: Decodable {
         let used_bytes: Double
@@ -24,7 +27,7 @@ private struct MQTTMetrics: Decodable {
                   let mount = try? container.decode(String.self, forKey: .mount),
                   let used = try? container.decode(Double.self, forKey: .used_bytes),
                   let total = try? container.decode(Double.self, forKey: .total_bytes),
-                  used.isFinite, total.isFinite, total > 0 else {
+                  used.isFinite, total.isFinite, total > 0, total <= maxBytes else {
                 self.value = nil
                 return
             }
@@ -296,22 +299,23 @@ internal final class MQTTSubscriber {
                 $0.isFinite ? ["cpu": RemoteCPUModule(usage: min(max($0 / 100, 0), 1))] : nil
             }
             let ram = value.metrics?.memory.flatMap { memory -> RemoteRAMModule? in
-                guard memory.total_bytes.isFinite, memory.used_bytes.isFinite, memory.total_bytes > 0 else { return nil }
+                guard memory.total_bytes.isFinite, memory.used_bytes.isFinite, memory.total_bytes > 0, memory.total_bytes <= maxBytes else { return nil }
                 return RemoteRAMModule(total: memory.total_bytes, used: min(max(memory.used_bytes, 0), memory.total_bytes))
             }
             let disk = value.metrics?.disk.flatMap { disk -> RemoteDiskModule? in
-                guard disk.total_bytes.isFinite, disk.used_bytes.isFinite, disk.total_bytes > 0 else { return nil }
+                guard disk.total_bytes.isFinite, disk.used_bytes.isFinite, disk.total_bytes > 0, disk.total_bytes <= maxBytes else { return nil }
                 return RemoteDiskModule(total: disk.total_bytes, used: min(max(disk.used_bytes, 0), disk.total_bytes))
             }
             let network = value.metrics?.network.flatMap { net -> RemoteNetworkModule? in
-                guard net.rx_bytes_per_second.isFinite, net.tx_bytes_per_second.isFinite else { return nil }
+                guard net.rx_bytes_per_second.isFinite, net.tx_bytes_per_second.isFinite,
+                  net.rx_bytes_per_second <= maxBytes, net.tx_bytes_per_second <= maxBytes else { return nil }
                 return RemoteNetworkModule(rx: max(net.rx_bytes_per_second, 0), tx: max(net.tx_bytes_per_second, 0))
             }
             return RemoteMachine(id: id, name: value.hostname, online: value.online, lastSeenTS: value.metrics?.timestamp,
                                  platform: value.platform,
                                  modules: RemoteModules(cpu: cpu, ram: ram, disk: disk, disks: value.metrics?.disks?.entries, network: network,
                                                         load: value.metrics?.load_1m.flatMap { $0.isFinite ? $0 : nil },
-                                                        uptime: value.metrics?.uptime_seconds.flatMap { $0.isFinite ? $0 : nil }))
+                                                        uptime: value.metrics?.uptime_seconds.flatMap { $0.isFinite && $0 >= 0 && $0 <= 1e10 ? $0 : nil }))
         }
         self.onSnapshot?(RemoteSnapshot(machines: machines))
     }
