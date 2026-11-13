@@ -285,13 +285,20 @@ class ApplicationSettings: NSStackView {
     
     @objc private func updateAction() {
         updater.check(force: true, completion: { result, error in
-            if error != nil {
-                debug("error updater.check(): \(error!.localizedDescription)")
+            // A manual check must always answer.
+            if let error {
+                debug("error updater.check(): \(error.localizedDescription)")
+                DispatchQueue.main.async {
+                    showAlert(localizedString("Unable to check for updates"), error.localizedDescription, .warning)
+                }
                 return
             }
             
             guard let version: version_s = result else {
                 debug("download error(): no version found")
+                DispatchQueue.main.async {
+                    showAlert(localizedString("Unable to check for updates"), nil, .warning)
+                }
                 return
             }
             

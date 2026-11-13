@@ -45,6 +45,20 @@ class UpdateSourceTests(unittest.TestCase):
         self.assertIn('completion(nil, "No releases available")', fetch)
         self.assertLess(fetch.index('statusCode == 404'), fetch.index('JSONSerialization'))
 
+    def test_manual_check_always_answers(self):
+        updater = (ROOT / "Kit/plugins/Updater.swift").read_text()
+        check = updater.split('public func check', 1)[1].split('private func fetchRelease', 1)[0]
+        self.assertIn('"No releases available"', check)
+        self.assertIn('newest: false', check)
+        action = (ROOT / "Stats/Views/AppSettings.swift").read_text().split('@objc private func updateAction()', 1)[1].split('@objc private func toggleUpdateInterval', 1)[0]
+        self.assertGreaterEqual(action.count('showAlert('), 2)
+
+    def test_remote_settings_page_scrolls(self):
+        window = (ROOT / "Kit/module/window.swift").read_text()
+        branch = window.split('if self.config.name == "Remote" {', 1)[1].split('var labels', 1)[0]
+        self.assertIn('ScrollableStackView()', branch)
+        self.assertIn('return scrollView', branch)
+
     def test_download_button_opens_release_in_browser(self):
         view = (ROOT / "Stats/Views/Update.swift").read_text()
         action = view.split('@objc private func download()', 1)[1].split('private func downloadAndInstallLegacy', 1)[0]

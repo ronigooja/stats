@@ -85,6 +85,11 @@ public class Updater {
         }
         
         self.fetchRelease(uri: self.github) { (result, err) in
+            // No release published yet: the installed version is the newest one.
+            if (err?.localizedDescription ?? "") == "No releases available" {
+                completion(version_s(current: self.currentVersion, latest: self.currentVersion, newest: false, url: ""), nil)
+                return
+            }
             guard let result = result, err == nil else {
                 completion(nil, err)
                 return

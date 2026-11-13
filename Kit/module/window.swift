@@ -75,6 +75,7 @@ open class Window: NSStackView {
     private var previewScrollView: ScrollableStackView? = nil
     private var disabledPreviewView: NSView? = nil
     private var settingsView: NSView? = nil
+    private var remoteScrollView: NSView? = nil
     
     init(
         config: module_c,
@@ -118,6 +119,7 @@ open class Window: NSStackView {
         NotificationCenter.default.addObserver(self, selector: #selector(listenForToggleView), name: .togglePreview, object: nil)
         
         self.previewView?.widthAnchor.constraint(equalTo: self.widthAnchor).isActive = true
+        self.remoteScrollView?.widthAnchor.constraint(equalTo: self.widthAnchor).isActive = true
         self.segmentedControl?.widthAnchor.constraint(equalTo: self.widthAnchor, constant: -(Constants.Settings.margin*2)).isActive = true
         self.widgetSelector?.widthAnchor.constraint(equalTo: self.widthAnchor, constant: -(Constants.Settings.margin*2)).isActive = true
         self.moduleSettings?.widthAnchor.constraint(equalTo: self.widthAnchor, constant: -(Constants.Settings.margin*2)).isActive = true
@@ -236,17 +238,25 @@ open class Window: NSStackView {
         )
         
         if self.config.name == "Remote" {
+            // Scrollable, so the page does not force a minimum window height or stretch its rows.
+            let scrollView = ScrollableStackView()
+            scrollView.translatesAutoresizingMaskIntoConstraints = false
+            scrollView.stackView.orientation = .vertical
+            scrollView.stackView.spacing = Constants.Settings.margin
+            scrollView.stackView.edgeInsets = view.edgeInsets
+            self.remoteScrollView = scrollView
+            
             let widgetSelector = WidgetSelectorView(module: self.config.name, widgets: self.widgets, stateCallback: self.loadWidget)
             self.widgetSelector = widgetSelector
             
-            view.addArrangedSubview(widgetSelector)
+            scrollView.stackView.addArrangedSubview(widgetSelector)
             
             if let settingsView = self.moduleSettings {
                 settingsView.load(widgets: self.widgets.filter { $0.isActive }.map { $0.type })
-                view.addArrangedSubview(settingsView)
+                scrollView.stackView.addArrangedSubview(settingsView)
             }
             
-            return view
+            return scrollView
         }
         
         var labels: [String] = [
