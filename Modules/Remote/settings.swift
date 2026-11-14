@@ -192,6 +192,7 @@ internal class RemoteList: NSStackView {
         toggle.identifier = NSUserInterfaceItemIdentifier(storeKey)
         
         let dot = DotView(color: status ? .systemGreen : .systemRed)
+        dot.toolTip = localizedString(status ? "Online" : "Offline")
         
         let titleField = TextView()
         titleField.stringValue = name

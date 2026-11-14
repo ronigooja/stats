@@ -575,6 +575,8 @@
 "Monitor and control your Macs from anywhere. Sign in to your System Stats account to see all your devices and hosts in one place." = "從任何地方監控並控制您的 Mac。登入您的 System Stats 帳戶，即可在同一處查看所有裝置和主機。"; // qwen3.8:27b
 
 // Remote
+"Online" = "線上";
+"Offline" = "離線";
 "Apply" = "套用";
 "Broker" = "MQTT 伺服器";
 "Connecting…" = "正在連線…";

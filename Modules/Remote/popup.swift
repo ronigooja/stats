@@ -259,6 +259,7 @@ private class RemoteItemView: NSStackView {
         self.labelField.stringValue = machine.displayName
         self.platformField.stringValue = machine.subtitle
         self.dot.setColor(machine.online ? .systemGreen : .systemRed)
+        self.dot.toolTip = localizedString(machine.online ? "Online" : "Offline")
         
         if let cpu = machine.modules?.cpuUsage {
             self.cpuLabel.stringValue = "\(Int(cpu.rounded(toPlaces: 2) * 100))%"
