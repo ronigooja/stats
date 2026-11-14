@@ -646,8 +646,19 @@ public func syncShell(_ args: String) -> String {
 }
 
 public func isNewestVersion(currentVersion: String, latestVersion: String) -> Bool {
-    let currentNumber = currentVersion.replacingOccurrences(of: "v", with: "")
-    let latestNumber = latestVersion.replacingOccurrences(of: "v", with: "")
+    var currentNumber = currentVersion.replacingOccurrences(of: "v", with: "")
+    var latestNumber = latestVersion.replacingOccurrences(of: "v", with: "")
+    // Strip fork revisions before parsing so they are never mistaken for beta suffixes.
+    let forkRevision: (inout String) -> Int = { number in
+        guard let range = number.range(of: "-roni-", options: .backwards) else { return 0 }
+        let suffix = String(number[range.upperBound...])
+        number = String(number[..<range.lowerBound])
+        guard !suffix.isEmpty, suffix.allSatisfy({ $0 >= "0" && $0 <= "9" }),
+              let revision = Int(suffix), revision > 0 else { return 0 }
+        return revision
+    }
+    let currentRevision = forkRevision(&currentNumber)
+    let latestRevision = forkRevision(&latestNumber)
     
     let currentArray = currentNumber.condenseWhitespace().split(separator: ".")
     let latestArray = latestNumber.condenseWhitespace().split(separator: ".")
@@ -657,6 +668,8 @@ public func isNewestVersion(currentVersion: String, latestVersion: String) -> Bo
     
     var current = Version(major: component(currentArray, 0), minor: component(currentArray, 1), patch: component(currentArray, 2))
     var latest = Version(major: component(latestArray, 0), minor: component(latestArray, 1), patch: component(latestArray, 2))
+    current.revision = currentRevision
+    latest.revision = latestRevision
     
     if let patch = currentArray.last, patch.contains("-") {
         let arr = patch.split(separator: "-")
@@ -680,17 +693,18 @@ public func isNewestVersion(currentVersion: String, latestVersion: String) -> Bo
     
     // current is not beta + latest is not beta
     if current.beta == nil && latest.beta == nil {
-        if latest.major > current.major {
-            return true
+        if latest.major != current.major {
+            return latest.major > current.major
         }
         
-        if latest.minor > current.minor && latest.major >= current.major {
-            return true
+        if latest.minor != current.minor {
+            return latest.minor > current.minor
         }
         
-        if latest.patch > current.patch && latest.minor >= current.minor && latest.major >= current.major {
-            return true
+        if latest.patch != current.patch {
+            return latest.patch > current.patch
         }
+        return latest.revision > current.revision
     }
     
     // current version is beta + last version is not beta
