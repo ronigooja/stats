@@ -159,7 +159,9 @@ public class Disks: Codable, RemoteMetrics {
     }
     
     public func apply(to reporter: MQTTReporter) {
-        guard let root = self.array.first(where: { $0.root }) ?? self.array.first(where: { !$0.removable }) else { return }
+        // The activity reader publishes drives without capacity (size keeps its placeholder of 1); skip those.
+        let known = self.array.filter { $0.size > 1 }
+        guard let root = known.first(where: { $0.root }) ?? known.first(where: { !$0.removable }) else { return }
         reporter.set(diskUsed: Double(max(root.size - root.free, 0)), diskTotal: Double(root.size))
     }
 }
