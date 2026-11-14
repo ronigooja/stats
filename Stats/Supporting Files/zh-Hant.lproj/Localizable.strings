@@ -168,8 +168,13 @@
 "Resume the Stats" = "恢復Stats";
 "Combined modules" = "合併模組";
 "Show icon instead of widgets" = "顯示圖示而非小工具";
+"App icon" = "App icon";
+"Mini bars" = "Mini bars";
+"Concentric rings" = "Concentric rings";
+"Arc dial" = "Arc dial";
 "Combined details" = "合併詳細資訊";
 "Spacing" = "間距";
+"Mixed status" = "Mixed status";
 "Choose file" = "選擇檔案";
 "Stress tests" = "壓力測試";
 "Keep the menubar items position" = "保持選單列項目的位置"; // qwen3.8:27b

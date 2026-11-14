@@ -168,8 +168,13 @@
 "Resume the Stats" = "恢复Stats";
 "Combined modules" = "合并模块";
 "Show icon instead of widgets" = "显示图标而非小组件";
+"App icon" = "App icon";
+"Mini bars" = "Mini bars";
+"Concentric rings" = "Concentric rings";
+"Arc dial" = "Arc dial";
 "Combined details" = "合并详情";
 "Spacing" = "间距";
+"Mixed status" = "Mixed status";
 "Choose file" = "选择文件";
 "Stress tests" = "压力测试";
 "Keep the menubar items position" = "保持菜单栏项目的位置"; // qwen3.8:27b
