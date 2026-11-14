@@ -348,7 +348,8 @@ public class SpeedWidget: WidgetWrapper {
         }
         
         if self.valueState {
-            var rowWidth: CGFloat = self.unitsState ? 48 : 30
+            // 44 fits "99.9 MB/s" (measured at 9pt light), so the widget stays stable up to that range without reserving more.
+            var rowWidth: CGFloat = self.unitsState ? 44 : 30
             let rowHeight: CGFloat = self.frame.height / 2
             let style = NSMutableParagraphStyle()
             style.alignment = self.valueAlignment
@@ -375,9 +376,7 @@ public class SpeedWidget: WidgetWrapper {
                 string: Units(bytes: self.outputValue).getReadableSpeed(base: base, unit: self.speedUnit, omitUnits: !self.unitsState),
                 attributes: outputStringAttributes
             )
-            if self.speedUnit != NetworkSpeedUnitAuto {
-                rowWidth = max(rowWidth, max(input.size().width, output.size().width).rounded(.up) + (Constants.Widget.margin.x*2))
-            }
+            rowWidth = max(rowWidth, max(input.size().width, output.size().width).rounded(.up) + (Constants.Widget.margin.x*2))
             
             var rect = CGRect(x: Constants.Widget.margin.x + x, y: inputY, width: rowWidth - (Constants.Widget.margin.x*2), height: rowHeight)
             input.draw(with: rect)
