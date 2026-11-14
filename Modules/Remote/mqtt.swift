@@ -136,7 +136,7 @@ internal final class MQTTSubscriber {
             }
         }
         connection.start(queue: .main)
-        self.timer = Timer(timeInterval: 20, repeats: true) { [weak self] _ in
+        self.timer = Timer(timeInterval: 45, repeats: true) { [weak self] _ in
             guard let self else { return }
             if Date().timeIntervalSince(self.lastResponse) > (self.connected ? 90 : 30) {
                 self.failed(localizedString("Timed out"))
@@ -144,7 +144,7 @@ internal final class MQTTSubscriber {
                 self.send(MQTTWire.packet(0xC0, []))
             }
         }
-        self.timer?.tolerance = 5
+        self.timer?.tolerance = 10
         RunLoop.main.add(self.timer!, forMode: .common)
     }
 

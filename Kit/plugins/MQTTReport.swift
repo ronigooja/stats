@@ -31,6 +31,12 @@ public enum MQTTConfig {
         let value = Store.shared.int(key: "Remote_mqtt_interval", defaultValue: defaultInterval)
         return max(5, value)
     }
+    // Reporter publishes count as activity; double their interval, bounded to 60...600 seconds.
+    public static var keepAlive: UInt16 {
+        // Clamp before multiplying to avoid overflow from an unusually large stored interval.
+        let seconds = max(60, min(interval, 300) * 2)
+        return UInt16(seconds)
+    }
     public static var deviceID: String {
         let stored = Store.shared.string(key: "Remote_mqtt_device", defaultValue: "")
         let value = sanitize(stored)
@@ -144,12 +150,12 @@ public enum MQTTWire {
         prefix + String(UUID().uuidString.replacingOccurrences(of: "-", with: "").prefix(23 - prefix.count))
     }
 
-    public static func connect(clientID: String, username: String, password: String, will: (topic: String, payload: Data)?) -> Data {
+    public static func connect(clientID: String, username: String, password: String, will: (topic: String, payload: Data)?, keepAlive: UInt16 = 60) -> Data {
         var flags: UInt8 = 0x02
         var body: [UInt8] = [0, 4, 77, 81, 84, 84, 4]
         if will != nil { flags |= 0x04 | 0x20 | 0x08 } // will, retain, QoS 1
         if !username.isEmpty || !password.isEmpty { flags |= 0x80 | 0x40 }
-        body += [flags, 0, 60]
+        body += [flags, UInt8(keepAlive >> 8), UInt8(keepAlive & 255)]
         body += string(clientID)
         if let will { body += string(will.topic) + [UInt8(will.payload.count >> 8), UInt8(will.payload.count & 255)] + [UInt8](will.payload) }
         if !username.isEmpty || !password.isEmpty { body += string(username) + string(password) }
@@ -271,7 +277,7 @@ public final class MQTTReporter {
                 case .ready:
                     let will = (topic: self.base + "/status", payload: Data(#"{"online":false}"#.utf8))
                     connection.send(content: MQTTWire.connect(clientID: MQTTWire.clientID("statsr"), username: MQTTConfig.username,
-                        password: MQTTConfig.password, will: will), completion: .contentProcessed { _ in })
+                        password: MQTTConfig.password, will: will, keepAlive: MQTTConfig.keepAlive), completion: .contentProcessed { _ in })
                     self.receive(connection, generation: generation)
                 case .failed(let error): self.failed(String(format: localizedString("Connection failed: %@"), error.localizedDescription))
                 case .waiting(let error): self.failed(String(format: localizedString("Waiting: %@"), error.localizedDescription))

@@ -36,9 +36,9 @@ class PowerTests(unittest.TestCase):
         self.assertIn('self.running = false', teardown)
 
     def test_repeating_timers_allow_coalescing(self):
-        self.assertIn('Timer(timeInterval: 20, repeats: true)', self.subscriber)
-        self.assertIn('self.timer?.tolerance = 5', self.subscriber)
-        self.assertLess(self.subscriber.index('self.timer?.tolerance = 5'), self.subscriber.index('RunLoop.main.add('))
+        self.assertIn('Timer(timeInterval: 45, repeats: true)', self.subscriber)
+        self.assertIn('self.timer?.tolerance = 10', self.subscriber)
+        self.assertLess(self.subscriber.index('self.timer?.tolerance = 10'), self.subscriber.index('RunLoop.main.add('))
         self.assertIn('repeating: .seconds(MQTTConfig.interval)', self.reporter)
         self.assertIn('leeway: .seconds(max(1, MQTTConfig.interval / 10))', self.reporter)
         self.assertIn('self.interval = 60', self.reader)
