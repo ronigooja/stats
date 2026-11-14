@@ -51,6 +51,15 @@ identifier_name:
     - expires_in
     - NetworkSpeedUnitAuto
     - NetworkSpeedUnits
+    # MQTT JSON field identifiers retain the external schema's spelling.
+    - used_bytes
+    - total_bytes
+    - rx_bytes_per_second
+    - tx_bytes_per_second
+    - cpu_percent
+    - gpu_percent
+    - load_1m
+    - uptime_seconds
 
 line_length: 200
 
