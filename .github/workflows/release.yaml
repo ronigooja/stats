@@ -7,13 +7,16 @@ on:
   workflow_dispatch:
     inputs:
       dry_run:
-        description: "Build and sign only: skip notarization and release publishing"
+        description: "Build only: upload the unsigned DMG and skip release publishing"
         type: boolean
         default: true
 
+permissions:
+  contents: write
+
 concurrency:
   group: release-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   release:
@@ -29,44 +32,20 @@ jobs:
           python3 Kit/scripts/changelog.py > CHANGELOG.md
           cat CHANGELOG.md
 
-      - name: Import signing certificate
-        uses: Apple-Actions/import-codesign-certs@v7
-        with:
-          p12-file-base64: ${{ secrets.DISTRIBUTION_CERTIFICATE }}
-          p12-password: ${{ secrets.DISTRIBUTION_CERTIFICATE_PASSWORD }}
-
       - name: Archive
-        run: xcodebuild -scheme Stats -destination 'platform=macOS' -configuration Release archive -archivePath build/Stats.xcarchive
-
-      - name: Export
         run: |
-          xcodebuild -exportArchive -exportOptionsPlist exportOptions.plist -archivePath build/Stats.xcarchive -exportPath build
-          ditto -c -k --keepParent build/Stats.app build/Stats.zip
+          xcodebuild -scheme Stats -destination 'platform=macOS' -configuration Release archive -archivePath build/Stats.xcarchive CODE_SIGNING_ALLOWED=NO
+          ditto build/Stats.xcarchive/Products/Applications/Stats.app build/Stats.app
 
-      - name: Notarize
-        if: inputs.dry_run != true
+      - name: Verify version
         run: |
-          xcrun notarytool submit build/Stats.zip \
-            --apple-id "${{ secrets.APPLE_ID }}" \
-            --team-id "${{ secrets.APPLE_TEAM_ID }}" \
-            --password "${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}" \
-            --wait
-
-      - name: Staple
-        if: inputs.dry_run != true
-        run: xcrun stapler staple build/Stats.app
-
-      - name: Verify signatures
-        run: |
-          codesign --verify --strict "build/Stats.app/Contents/PlugIns/WidgetsExtension.appex"
           app=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" build/Stats.app/Contents/Info.plist)
           widget=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" "build/Stats.app/Contents/PlugIns/WidgetsExtension.appex/Contents/Info.plist")
           echo "app: $app, widget: $widget"
           [ "$app" = "$widget" ] || { echo "ERROR: widget version does not match app version"; exit 1; }
-
-      - name: Verify gatekeeper
-        if: inputs.dry_run != true
-        run: spctl -a -t exec -vvv build/Stats.app
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            [ "v$app" = "$GITHUB_REF_NAME" ] || { echo "ERROR: app version v$app does not match tag $GITHUB_REF_NAME"; exit 1; }
+          fi
 
       - name: DMG
         run: |
@@ -90,6 +69,7 @@ jobs:
         with:
           name: Stats.dmg
           path: build/Stats.dmg
+          retention-days: 7
 
       - name: Publish
         if: inputs.dry_run != true
