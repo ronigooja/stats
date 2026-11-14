@@ -578,3 +578,37 @@
 "Login to System Stats to see your devices" = "Login to System Stats to see your devices";
 "Monitor HTTP, ICMP and custom endpoints" = "Monitor HTTP, ICMP and custom endpoints";
 "Monitor and control your Macs from anywhere. Sign in to your System Stats account to see all your devices and hosts in one place." = "Monitor and control your Macs from anywhere. Sign in to your System Stats account to see all your devices and hosts in one place.";
+
+// Remote
+"Apply" = "Apply";
+"Broker" = "Broker";
+"Connecting…" = "Connecting…";
+"Could not save the password locally" = "Could not save the password locally";
+"Device ID" = "Device ID";
+"Disconnected" = "Disconnected";
+"Enter a host, a port (1–65535) and valid credentials" = "Enter a host, a port (1–65535) and valid credentials";
+"Host" = "Host";
+"Load average" = "Load average";
+"Password" = "Password";
+"Port" = "Port";
+"Report interval" = "Report interval";
+"Report this Mac" = "Report this Mac";
+"Reporting off" = "Reporting off";
+"Saved" = "Saved";
+"Show machines" = "Show machines";
+"This Mac" = "This Mac";
+"Username" = "Username";
+"Invalid CONNACK" = "Invalid CONNACK";
+"Protocol version rejected" = "Protocol version rejected";
+"Client identifier rejected" = "Client identifier rejected";
+"Server unavailable" = "Server unavailable";
+"Username or password rejected" = "Username or password rejected";
+"Not authorized" = "Not authorized";
+"Connection refused" = "Connection refused";
+"Connected · waiting for machines" = "Connected · waiting for machines";
+"Connected · %d machines" = "Connected · %d machines";
+"Connected, but no machines received. Check that this account can read stats/v1/machines/#" = "Connected, but no machines received. Check that this account can read stats/v1/machines/#";
+"%@; retrying…" = "%@; retrying…";
+"Send failed" = "Send failed";
+"Reporting as %@" = "Reporting as %@";
+"Invalid host, port or device ID" = "Invalid host, port or device ID";

@@ -116,7 +116,7 @@ internal final class MQTTSubscriber {
         self.buffer.removeAll()
         self.connected = false
         self.lastResponse = Date()
-        self.onState?("Connecting…")
+        self.onState?(localizedString("Connecting…"))
         let connection = NWConnection(host: NWEndpoint.Host(MQTTConfig.host), port: port, using: .tls)
         self.connection = connection
         connection.stateUpdateHandler = { [weak self] state in
@@ -155,7 +155,7 @@ internal final class MQTTSubscriber {
         self.timer = nil
         for id in Array(self.machines.keys) { self.machines[id]?.online = false }
         self.publish()
-        self.onState?(reason + "; retrying…")
+        self.onState?(String(format: localizedString("%@; retrying…"), reason))
         let item = DispatchWorkItem { [weak self] in self?.open() }
         self.reconnect = item
         DispatchQueue.main.asyncAfter(deadline: .now() + min(pow(2, Double(self.attempts)), 60), execute: item)
@@ -166,7 +166,7 @@ internal final class MQTTSubscriber {
         let generation = self.generation
         self.connection?.send(content: packet, completion: .contentProcessed { [weak self] error in
             guard let self, self.generation == generation, error != nil else { return }
-            self.failed("Send failed")
+            self.failed(localizedString("Send failed"))
         })
     }
 
@@ -175,7 +175,7 @@ internal final class MQTTSubscriber {
             guard let self, !self.stopped, self.generation == generation else { return }
             if let data { self.buffer.append(data); self.parse() }
             guard self.generation == generation else { return }
-            if complete || error != nil { self.failed("Disconnected") }
+            if complete || error != nil { self.failed(localizedString("Disconnected")) }
             else { self.receive(connection, generation: generation) }
         }
     }
@@ -209,13 +209,13 @@ internal final class MQTTSubscriber {
     }
 
     private func connack(_ payload: [UInt8]) {
-        guard payload.count == 2, payload[0] == 0 else { self.failed("Invalid CONNACK"); return }
+        guard payload.count == 2, payload[0] == 0 else { self.failed(localizedString("Invalid CONNACK")); return }
         guard payload[1] == 0 else {
             let reasons: [UInt8: String] = [
-                1: "Protocol version rejected", 2: "Client identifier rejected", 3: "Server unavailable",
-                4: "Username or password rejected", 5: "Not authorized"
+                1: localizedString("Protocol version rejected"), 2: localizedString("Client identifier rejected"), 3: localizedString("Server unavailable"),
+                4: localizedString("Username or password rejected"), 5: localizedString("Not authorized")
             ]
-            self.failed(reasons[payload[1]] ?? "Connection refused")
+            self.failed(reasons[payload[1]] ?? localizedString("Connection refused"))
             return
         }
         var subscription: [UInt8] = [0, 1]
@@ -234,13 +234,13 @@ internal final class MQTTSubscriber {
         }
         self.connected = true
         self.attempts = 0
-        self.onState?(self.machines.isEmpty ? "Connected · waiting for machines" : "Connected · \(self.machines.count) machines")
+        self.onState?(self.machines.isEmpty ? localizedString("Connected · waiting for machines") : String(format: localizedString("Connected · %d machines"), self.machines.count))
         
         // Retained info/status arrive right after subscribing, so silence means no data or no read access.
         self.silence?.cancel()
         let check = DispatchWorkItem { [weak self] in
             guard let self, !self.stopped, self.connected, self.machines.isEmpty else { return }
-            self.onState?("Connected, but no machines received. Check that this account can read stats/v1/machines/#")
+            self.onState?(localizedString("Connected, but no machines received. Check that this account can read stats/v1/machines/#"))
         }
         self.silence = check
         DispatchQueue.main.asyncAfter(deadline: .now() + 8, execute: check)
@@ -289,7 +289,7 @@ internal final class MQTTSubscriber {
             }
         }
         self.machines[id] = machine
-        self.onState?("Connected · \(self.machines.count) machines")
+        self.onState?(String(format: localizedString("Connected · %d machines"), self.machines.count))
         self.publish()
     }
 

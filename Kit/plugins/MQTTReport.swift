@@ -238,7 +238,7 @@ public final class MQTTReporter {
     private func open() {
         guard let number = UInt16(MQTTConfig.port), number > 0, let port = NWEndpoint.Port(rawValue: number),
               !MQTTConfig.host.isEmpty, !MQTTConfig.deviceID.isEmpty else {
-            self.notify("Invalid host, port or device ID")
+            self.notify(localizedString("Invalid host, port or device ID"))
             return
         }
         self.generation += 1
@@ -262,7 +262,7 @@ public final class MQTTReporter {
                 }
             }
         }
-        self.notify("Connecting…")
+        self.notify(localizedString("Connecting…"))
         connection.start(queue: self.queue)
     }
 
@@ -275,7 +275,7 @@ public final class MQTTReporter {
                     self.parse()
                 }
                 guard self.generation == generation else { return }
-                if complete || error != nil { self.failed("Disconnected") }
+                if complete || error != nil { self.failed(localizedString("Disconnected")) }
                 else { self.receive(connection, generation: generation) }
             }
         }
@@ -298,7 +298,7 @@ public final class MQTTReporter {
                 self.ready = true
                 self.attempts = 0
                 self.infoSent = false
-                self.notify("Reporting as \(MQTTConfig.deviceID)")
+                self.notify(String(format: localizedString("Reporting as %@"), MQTTConfig.deviceID))
                 self.sendInfo()
                 self.send(topic: self.base + "/status", payload: Data(#"{"online":true}"#.utf8))
                 self.startTimer()
@@ -348,7 +348,7 @@ public final class MQTTReporter {
             guard error != nil else { return }
             self?.queue.async {
                 guard let self, self.generation == generation else { return }
-                self.failed("Send failed")
+                self.failed(localizedString("Send failed"))
             }
         })
     }
@@ -357,7 +357,7 @@ public final class MQTTReporter {
         guard self.connection != nil else { return }
         self.teardown(sendOffline: false)
         guard MQTTConfig.reporting else { return }
-        self.notify(reason + "; retrying…")
+        self.notify(String(format: localizedString("%@; retrying…"), reason))
         let item = DispatchWorkItem { [weak self] in
             guard let self else { return }
             self.reconnect = nil
@@ -384,7 +384,7 @@ public final class MQTTReporter {
         }
         self.connection = nil
         self.ready = false
-        if sendOffline { self.notify("Reporting off") }
+        if sendOffline { self.notify(localizedString("Reporting off")) }
     }
 }
 
