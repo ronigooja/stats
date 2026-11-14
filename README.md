@@ -19,16 +19,25 @@ brew install stats
 ```
 The Homebrew cask installs the upstream app, not this fork. Use the manual download above for fork releases.
 
+### First launch (unsigned build)
+Fork releases are not signed or notarized. After moving the app to the Applications folder, open it with right click > Open, or allow it in System Settings > Privacy & Security.
+
 ### Remote monitoring (self-hosted MQTT)
-The Remote module shows machines that publish to your own MQTT 3.1.1 broker over TLS (default port 8883). It has no account or cloud service.
+The Remote module shows machines that publish to your own MQTT 3.1.1 broker over TLS (default port 8883). It has no account or cloud service, and it keeps its own menu bar item even when modules are combined.
 
 - **Viewing:** Remote settings > Broker. Set host, port and credentials, then enable "Show machines". Stats subscribes to `stats/v1/machines/+/{info,metrics,status}`.
-- **Reporting this Mac:** Remote settings > This Mac. Turn on "Report this Mac", choose a device ID and an interval (default 1 min). It is off by default.
-- **Linux machines:** use [stats-linux](https://github.com/ronigooja/stats-linux), which publishes the same topics.
+- **Reporting this Mac:** Remote settings > This Mac. Turn on "Report this Mac", choose a device ID and an interval (10 s to 10 min, default 1 min). It is off by default. CPU, RAM, disk, network, load average and the GPU selected in the GPU module are reported.
+- **Machine rows:** CPU, RAM and disk bars. Hover a row for network speed, load average, GPU, RAM and disk usage, uptime, and one line per mount when a machine reports several filesystems.
+- **Linux machines:** use [stats-linux](https://github.com/ronigooja/stats-linux), which publishes the same topics and aggregates all physical filesystems.
 - **Broker account:** one account with read and write access to `stats/v1/machines/#` is enough for viewing and reporting from every machine. A write-only account connects and subscribes successfully but receives nothing, so Stats reports that no machines were received.
+- **Password:** stored encrypted in the local settings with a key file in `~/Library/Application Support/Stats/mqtt.key` (mode 600). This only prevents reading the password in plain text; anyone who can read both files can decrypt it. Passwords saved by older builds in the Keychain are not read, so enter the password again once.
 
 ### Fork updates
-For this fork, all in-app update checks use [GitHub Releases](https://github.com/ronigooja/stats/releases) directly, with no upstream fallback. Publish a non-draft, non-prerelease release with a `Stats.dmg` asset and an increasing `vMAJOR.MINOR.PATCH` tag. The mounted image must contain `Stats.app`, including its bundled `updater.sh` script. In-app installation requires a valid app signature and the same signing Team ID as the currently installed app; switching from an upstream-signed build to a differently signed fork requires manual installation. Ad-hoc or unsigned builds cannot use this automatic installation path.
+In-app update checks use [GitHub Releases](https://github.com/ronigooja/stats/releases) of this fork only, with no upstream fallback. When a newer release exists, "Download" opens the release page; download `Stats.dmg` and install it manually, because the builds are unsigned and cannot use the in-app installer.
+
+Release tags have the form `v<upstream version>-roni-<N>`, for example `v3.0.26-roni-1`. `N` increases with every fork release of the same upstream version, a higher upstream version always wins, and a plain upstream tag is not newer than a fork revision of it. The app version (`MARKETING_VERSION`) must match the tag without the leading `v`; the release workflow checks this.
+
+To publish: set `MARKETING_VERSION`, merge to `master`, then push the tag. The `release` workflow builds an unsigned `Stats.dmg` and creates the release. Run it manually with `dry_run` enabled to get the DMG as an artifact without publishing.
 
 ### Uninstall
 Run the uninstall script bundled with the app (requires administrator privileges to remove the SMC helper):
