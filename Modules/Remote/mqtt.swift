@@ -108,7 +108,7 @@ internal final class MQTTSubscriber {
         guard !self.stopped else { return }
         guard let number = UInt16(MQTTConfig.port), number > 0,
               let port = NWEndpoint.Port(rawValue: number), !MQTTConfig.host.isEmpty else {
-            self.onState?("Invalid broker host or port")
+            self.onState?(localizedString("Invalid broker host or port"))
             return
         }
         self.generation += 1
@@ -126,8 +126,8 @@ internal final class MQTTSubscriber {
                 self.send(MQTTWire.connect(clientID: MQTTWire.clientID("statsv"), username: MQTTConfig.username,
                                            password: MQTTConfig.password, will: nil))
                 self.receive(connection, generation: generation)
-            case .failed(let error): self.failed("Connection failed: \(error.localizedDescription)")
-            case .waiting(let error): self.failed("Unreachable: \(error.localizedDescription)")
+            case .failed(let error): self.failed(String(format: localizedString("Connection failed: %@"), error.localizedDescription))
+            case .waiting(let error): self.failed(String(format: localizedString("Unreachable: %@"), error.localizedDescription))
             default: break
             }
         }
@@ -135,7 +135,7 @@ internal final class MQTTSubscriber {
         self.timer = Timer(timeInterval: 20, repeats: true) { [weak self] _ in
             guard let self else { return }
             if Date().timeIntervalSince(self.lastResponse) > (self.connected ? 90 : 30) {
-                self.failed("Timed out")
+                self.failed(localizedString("Timed out"))
             } else if self.connected {
                 self.send(MQTTWire.packet(0xC0, []))
             }
@@ -229,7 +229,7 @@ internal final class MQTTSubscriber {
         guard payload.count == 5, payload[0] == 0, payload[1] == 1 else { self.failed("Invalid SUBACK"); return }
         // 0x80 marks a rejected subscription. Some brokers (Mosquitto) grant it anyway and just never deliver.
         guard payload.dropFirst(2).allSatisfy({ $0 <= 2 }) else {
-            self.failed("Subscription denied: this account cannot read machines")
+            self.failed(localizedString("Subscription denied: this account cannot read machines"))
             return
         }
         self.connected = true

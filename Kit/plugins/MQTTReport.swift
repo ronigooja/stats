@@ -256,8 +256,8 @@ public final class MQTTReporter {
                     connection.send(content: MQTTWire.connect(clientID: MQTTWire.clientID("statsr"), username: MQTTConfig.username,
                         password: MQTTConfig.password, will: will), completion: .contentProcessed { _ in })
                     self.receive(connection, generation: generation)
-                case .failed(let error): self.failed("Connection failed: \(error.localizedDescription)")
-                case .waiting(let error): self.failed("Waiting: \(error.localizedDescription)")
+                case .failed(let error): self.failed(String(format: localizedString("Connection failed: %@"), error.localizedDescription))
+                case .waiting(let error): self.failed(String(format: localizedString("Waiting: %@"), error.localizedDescription))
                 default: break
                 }
             }

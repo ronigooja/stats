@@ -612,3 +612,9 @@
 "Send failed" = "Send failed";
 "Reporting as %@" = "Reporting as %@";
 "Invalid host, port or device ID" = "Invalid host, port or device ID";
+"Invalid broker host or port" = "Invalid broker host or port";
+"Timed out" = "Timed out";
+"Subscription denied: this account cannot read machines" = "Subscription denied: this account cannot read machines";
+"Connection failed: %@" = "Connection failed: %@";
+"Unreachable: %@" = "Unreachable: %@";
+"Waiting: %@" = "Waiting: %@";

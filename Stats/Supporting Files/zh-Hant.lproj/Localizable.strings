@@ -608,3 +608,9 @@
 "Send failed" = "傳送失敗";
 "Reporting as %@" = "正在回報為 %@";
 "Invalid host, port or device ID" = "主機、連接埠或裝置 ID 無效";
+"Invalid broker host or port" = "MQTT 伺服器位址或連接埠無效";
+"Timed out" = "連線逾時";
+"Subscription denied: this account cannot read machines" = "訂閱被拒絕：此帳號無權讀取機器資料";
+"Connection failed: %@" = "連線失敗：%@";
+"Unreachable: %@" = "無法連線：%@";
+"Waiting: %@" = "等待連線：%@";
