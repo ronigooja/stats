@@ -52,6 +52,7 @@ private struct MQTTMetrics: Decodable {
         }
     }
     let cpu_percent: Double?
+    let gpu_percent: Double?
     let memory: Capacity?
     let disk: Capacity?
     let disks: Disks?
@@ -327,11 +328,15 @@ internal final class MQTTSubscriber {
                   net.rx_bytes_per_second <= maxBytes, net.tx_bytes_per_second <= maxBytes else { return nil }
                 return RemoteNetworkModule(rx: max(net.rx_bytes_per_second, 0), tx: max(net.tx_bytes_per_second, 0))
             }
+            let gpu = value.metrics?.gpu_percent.flatMap { gpu -> Double? in
+                guard gpu.isFinite, gpu >= 0, gpu <= 100 else { return nil }
+                return min(max(gpu / 100, 0), 1)
+            }
             return RemoteMachine(id: id, name: value.hostname, online: value.online, lastSeenTS: value.metrics?.timestamp,
                                  platform: value.platform,
                                  modules: RemoteModules(cpu: cpu, ram: ram, disk: disk, disks: value.metrics?.disks?.entries, network: network,
                                                         load: value.metrics?.load_1m.flatMap { $0.isFinite ? $0 : nil },
-                                                        uptime: value.metrics?.uptime_seconds.flatMap { $0.isFinite && $0 >= 0 && $0 <= 1e10 ? $0 : nil }))
+                                                        uptime: value.metrics?.uptime_seconds.flatMap { $0.isFinite && $0 >= 0 && $0 <= 1e10 ? $0 : nil }, gpu: gpu))
         }
         self.onSnapshot?(RemoteSnapshot(machines: machines))
     }

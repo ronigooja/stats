@@ -42,6 +42,9 @@ public struct RemoteMachine: Codable {
         if let load = self.modules?.load {
             lines.append("\(localizedString("Load average")) (1m): \(String(format: "%.2f", load))")
         }
+        if let gpu = self.modules?.gpu {
+            lines.append("\(localizedString("GPU")): \(Int((gpu * 100).rounded()))%")
+        }
         if let disks = self.modules?.disks, disks.count >= 2 {
             for disk in disks.prefix(8) {
                 lines.append("\(disk.mount): \(Units(bytes: Int64(disk.used)).getReadableMemory()) / \(Units(bytes: Int64(disk.total)).getReadableMemory())")
@@ -71,6 +74,7 @@ public struct RemoteModules: Codable {
     public let network: RemoteNetworkModule?
     public let load: Double?
     public let uptime: Double?
+    public let gpu: Double?
     
     public var cpuUsage: Double? {
         guard let cpu = self.cpu else { return nil }

@@ -189,6 +189,7 @@ public final class MQTTReporter {
         }
     }
     private var cpu: Double?
+    private var gpu: Double?
     private var ramUsed: Double?
     private var ramTotal: Double?
     private var diskUsed: Double?
@@ -224,16 +225,21 @@ public final class MQTTReporter {
 
     // Safe to call from any thread; each module reports only the fields it knows about.
     public func set(cpu: Double? = nil, ramUsed: Double? = nil, ramTotal: Double? = nil, diskUsed: Double? = nil,
-                    diskTotal: Double? = nil, rx: Double? = nil, tx: Double? = nil, load1: Double? = nil) {
+                    diskTotal: Double? = nil, rx: Double? = nil, tx: Double? = nil, load1: Double? = nil, gpu: Double? = nil) {
         self.queue.async { [weak self] in
             guard let self else { return }
             if let cpu { self.cpu = cpu }
+            if let gpu { self.gpu = gpu }
             if let ramUsed, let ramTotal { self.ramUsed = ramUsed; self.ramTotal = ramTotal }
             if let diskUsed, let diskTotal { self.diskUsed = diskUsed; self.diskTotal = diskTotal }
             if let rx { self.rx = rx }
             if let tx { self.tx = tx }
             if let load1 { self.load1 = load1 }
         }
+    }
+
+    public func clearGPU() {
+        self.queue.async { [weak self] in self?.gpu = nil }
     }
 
     public func stop() {
@@ -359,7 +365,9 @@ public final class MQTTReporter {
         if let diskUsed, let diskTotal { metrics["disk"] = ["used_bytes": Int64(diskUsed), "total_bytes": Int64(diskTotal)] }
         if let rx, let tx { metrics["network"] = ["rx_bytes_per_second": rx, "tx_bytes_per_second": tx] }
         if let load1 { metrics["load_1m"] = load1 }
-        guard metrics.count > 3, let data = try? JSONSerialization.data(withJSONObject: metrics) else { return }
+        guard metrics.count > 3 else { return }
+        if let gpu { metrics["gpu_percent"] = (gpu * 10000).rounded() / 100 }
+        guard let data = try? JSONSerialization.data(withJSONObject: metrics) else { return }
         self.send(topic: self.base + "/metrics", payload: data)
     }
 

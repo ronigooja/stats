@@ -161,6 +161,7 @@ public class GPU: Module {
     private func infoCallback(_ raw: GPUs?) {
         guard let value = raw, !value.list.isEmpty, self.enabled else {
             self.summaryCallback(nil)
+            if MQTTConfig.reporting { MQTTReporter.shared.clearGPU() }
             return
         }
         
@@ -169,14 +170,17 @@ public class GPU: Module {
         let activeGPUs = value.active()
         guard let activeGPU = activeGPUs.first(where: { $0.state }) ?? activeGPUs.first else {
             self.summaryCallback(nil)
+            if MQTTConfig.reporting { MQTTReporter.shared.clearGPU() }
             return
         }
         let selectedGPU: GPU_Info = activeGPUs.first{ $0.model == self.selectedGPU } ?? activeGPU
         guard let utilization = selectedGPU.utilization else {
             self.summaryCallback(nil)
+            if MQTTConfig.reporting { MQTTReporter.shared.clearGPU() }
             return
         }
         self.summaryCallback(utilization)
+        if MQTTConfig.reporting { MQTTReporter.shared.set(gpu: utilization) }
         
         self.popupView.loadCallback(selectedGPU)
         self.portalView.callback(selectedGPU)
