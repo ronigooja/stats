@@ -82,6 +82,8 @@ internal final class MQTTSubscriber {
     private var connected = false
     private var attempts = 0
     private var silence: DispatchWorkItem?
+    private let snapshotDelay: TimeInterval = 0.5
+    private var pendingSnapshot: DispatchWorkItem?
 
     func start() {
         guard self.stopped else { self.publish(); return }
@@ -92,6 +94,8 @@ internal final class MQTTSubscriber {
 
     func stop() {
         self.stopped = true
+        self.pendingSnapshot?.cancel()
+        self.pendingSnapshot = nil
         self.generation += 1
         self.reconnect?.cancel()
         self.reconnect = nil
@@ -140,6 +144,7 @@ internal final class MQTTSubscriber {
                 self.send(MQTTWire.packet(0xC0, []))
             }
         }
+        self.timer?.tolerance = 5
         RunLoop.main.add(self.timer!, forMode: .common)
     }
 
@@ -290,7 +295,18 @@ internal final class MQTTSubscriber {
         }
         self.machines[id] = machine
         self.onState?(String(format: localizedString("Connected · %d machines"), self.machines.count))
-        self.publish()
+        self.scheduleSnapshot()
+    }
+
+    private func scheduleSnapshot() {
+        guard !self.stopped, self.pendingSnapshot == nil else { return }
+        let item = DispatchWorkItem { [weak self] in
+            guard let self, !self.stopped else { return }
+            self.pendingSnapshot = nil
+            self.publish()
+        }
+        self.pendingSnapshot = item
+        DispatchQueue.main.asyncAfter(deadline: .now() + self.snapshotDelay, execute: item)
     }
 
     private func publish() {

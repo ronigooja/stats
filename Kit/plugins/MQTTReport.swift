@@ -167,6 +167,21 @@ public final class MQTTReporter {
     public static let shared = MQTTReporter()
 
     private let queue = DispatchQueue(label: "eu.exelban.Stats.MQTTReporter")
+    private let runningLock = NSLock()
+    private var _running = false
+    // Only this flag is shared with reading threads; connection state stays on queue.
+    private var running: Bool {
+        get {
+            self.runningLock.lock()
+            defer { self.runningLock.unlock() }
+            return self._running
+        }
+        set {
+            self.runningLock.lock()
+            defer { self.runningLock.unlock() }
+            self._running = newValue
+        }
+    }
     private var cpu: Double?
     private var ramUsed: Double?
     private var ramTotal: Double?
@@ -197,6 +212,7 @@ public final class MQTTReporter {
     public func update(value: Any) {
         guard MQTTConfig.reporting, let metrics = value as? RemoteMetrics else { return }
         metrics.apply(to: self)
+        guard !self.running else { return }
         self.queue.async { [weak self] in self?.ensureRunning() }
     }
 
@@ -241,6 +257,7 @@ public final class MQTTReporter {
             self.notify(localizedString("Invalid host, port or device ID"))
             return
         }
+        self.running = true
         self.generation += 1
         let generation = self.generation
         self.buffer.removeAll()
@@ -309,7 +326,8 @@ public final class MQTTReporter {
     private func startTimer() {
         self.timer?.cancel()
         let timer = DispatchSource.makeTimerSource(queue: self.queue)
-        timer.schedule(deadline: .now() + 1, repeating: .seconds(MQTTConfig.interval))
+        timer.schedule(deadline: .now() + 1, repeating: .seconds(MQTTConfig.interval),
+                       leeway: .seconds(max(1, MQTTConfig.interval / 10)))
         timer.setEventHandler { [weak self] in self?.publishMetrics() }
         timer.resume()
         self.timer = timer
@@ -361,9 +379,11 @@ public final class MQTTReporter {
         let item = DispatchWorkItem { [weak self] in
             guard let self else { return }
             self.reconnect = nil
+            self.running = false
             self.ensureRunning()
         }
         self.reconnect = item
+        self.running = true
         self.queue.asyncAfter(deadline: .now() + min(pow(2, Double(self.attempts)), 60), execute: item)
         self.attempts = min(self.attempts + 1, 6)
     }
@@ -384,6 +404,7 @@ public final class MQTTReporter {
         }
         self.connection = nil
         self.ready = false
+        self.running = false
         if sendOffline { self.notify(localizedString("Reporting off")) }
     }
 }
