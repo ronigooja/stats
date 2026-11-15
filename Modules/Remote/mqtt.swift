@@ -14,6 +14,7 @@ private struct MQTTMetrics: Decodable {
         init(from decoder: Decoder) throws {
             guard let container = try? decoder.singleValueContainer(),
                   let text = try? container.decode(String.self), text.utf8.count <= 45,
+                  text.unicodeScalars.allSatisfy({ CharacterSet(charactersIn: "0123456789abcdefABCDEF:.").contains($0) }),
                   IPv4Address(text) != nil || IPv6Address(text) != nil else {
                 self.value = nil
                 return
@@ -74,7 +75,12 @@ private struct MQTTMetrics: Decodable {
     let load_1m: Double?
     let uptime_seconds: Double?
     let timestamp: String?
-    let public_ip: PublicIP?
+    let publicIP: PublicIP?
+
+    private enum CodingKeys: String, CodingKey {
+        case cpu_percent, gpu_percent, memory, disk, disks, network, load_1m, uptime_seconds, timestamp
+        case publicIP = "public_ip"
+    }
 }
 
 // All state and callbacks are confined to the main queue. TLS uses system trust validation.
@@ -358,7 +364,7 @@ internal final class MQTTSubscriber {
                                  modules: RemoteModules(cpu: cpu, ram: ram, disk: disk, disks: value.metrics?.disks?.entries, network: network,
                                                         load: value.metrics?.load_1m.flatMap { $0.isFinite ? $0 : nil },
                                                         uptime: value.metrics?.uptime_seconds.flatMap { $0.isFinite && $0 >= 0 && $0 <= 1e10 ? $0 : nil }, gpu: gpu,
-                                                        publicIP: value.metrics?.public_ip?.value))
+                                                        publicIP: value.metrics?.publicIP?.value))
         }
         self.onSnapshot?(RemoteSnapshot(machines: machines))
     }

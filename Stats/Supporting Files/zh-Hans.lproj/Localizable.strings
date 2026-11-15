@@ -425,7 +425,7 @@
 "Open Location Settings" = "打开位置设置";
 "Uploading" = "上传";
 "Downloading" = "下载";
-"Public IP" = "公网IP";
+"Public IP" = "公网 IP";
 "Local IP" = "本地IP";
 "Interface" = "接口";
 "Physical address" = "物理地址";
@@ -598,7 +598,6 @@
 "Reporting off" = "已关闭上报";
 "Saved" = "已保存";
 "Show machines" = "显示机器";
-"Public IP" = "公网 IP";
 "Delete machine" = "删除机器";
 "Delete" = "删除";
 "Delete %@?" = "删除 %@？";
