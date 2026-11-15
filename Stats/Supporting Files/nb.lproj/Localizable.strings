@@ -596,6 +596,11 @@
 "Reporting off" = "Reporting off";
 "Saved" = "Saved";
 "Show machines" = "Show machines";
+"Delete machine" = "Delete machine";
+"Delete" = "Delete";
+"Delete %@?" = "Delete %@?";
+"This removes the machine's data from the broker for every viewer. A running collector will publish it again." = "This removes the machine's data from the broker for every viewer. A running collector will publish it again.";
+"Could not delete %@" = "Could not delete %@";
 "This Mac" = "This Mac";
 "Username" = "Username";
 "Invalid CONNACK" = "Invalid CONNACK";

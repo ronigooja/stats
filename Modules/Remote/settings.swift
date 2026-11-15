@@ -187,7 +187,7 @@ internal class RemoteList: NSStackView {
         self.sections.append(section)
     }
     
-    fileprivate func row(storeKey: String, status: Bool, name: String, subtitle: String) -> NSView {
+    fileprivate func row(id: String, storeKey: String, status: Bool, name: String, subtitle: String) -> NSView {
         let toggle = switchView(action: #selector(self.toggle), state: Store.shared.bool(key: storeKey, defaultValue: true))
         toggle.identifier = NSUserInterfaceItemIdentifier(storeKey)
         
@@ -213,7 +213,18 @@ internal class RemoteList: NSStackView {
             textStack.addArrangedSubview(NSView())
         }
         
-        let row = NSStackView(views: [dot, textStack, NSView(), toggle])
+        let delete = NSButton()
+        delete.bezelStyle = .regularSquare
+        delete.isBordered = false
+        delete.image = iconFromSymbol(name: "trash", scale: .medium)
+        delete.contentTintColor = .secondaryLabelColor
+        delete.toolTip = localizedString("Delete machine")
+        delete.identifier = NSUserInterfaceItemIdentifier(id)
+        delete.target = self
+        delete.action = #selector(self.deleteMachine)
+        delete.setAccessibilityLabel(name)
+        
+        let row = NSStackView(views: [dot, textStack, NSView(), delete, toggle])
         row.orientation = .horizontal
         row.alignment = .centerY
         row.distribution = .fill
@@ -221,6 +232,27 @@ internal class RemoteList: NSStackView {
         row.edgeInsets = NSEdgeInsets(top: Constants.Settings.margin / 2, left: 0, bottom: (Constants.Settings.margin / 2) - 1, right: 0)
         
         return row
+    }
+    
+    @objc private func deleteMachine(_ sender: NSButton) {
+        guard let id = sender.identifier?.rawValue else { return }
+        let name = sender.accessibilityLabel() ?? id
+        let alert = NSAlert()
+        alert.messageText = String(format: localizedString("Delete %@?"), name)
+        alert.informativeText = localizedString("This removes the machine's data from the broker for every viewer. A running collector will publish it again.")
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: localizedString("Delete"))
+        alert.addButton(withTitle: localizedString("Cancel"))
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+        sender.isEnabled = false
+        MQTTCleaner.delete(id: id) { reason in
+            if let reason {
+                sender.isEnabled = true
+                showAlert(String(format: localizedString("Could not delete %@"), name), reason, .warning)
+            } else {
+                Store.shared.remove("\(ModuleType.remote.stringValue)_machine_\(id)")
+            }
+        }
     }
     
     @objc private func toggle(_ sender: NSControl) {
@@ -240,6 +272,7 @@ internal class RemoteList: NSStackView {
         let section = PreferencesSection(title: localizedString("Machines"))
         for machine in machines {
             section.add(self.row(
+                id: machine.id,
                 storeKey: "\(ModuleType.remote.stringValue)_machine_\(machine.id)",
                 status: machine.online,
                 name: machine.displayName,

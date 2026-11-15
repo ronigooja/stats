@@ -277,6 +277,12 @@ internal final class MQTTSubscriber {
             case "status": machine.online = false
             default: return
             }
+            if machine.hostname == nil, machine.platform == nil, machine.metrics == nil, !machine.online {
+                self.machines[id] = nil
+                self.onState?(String(format: localizedString("Connected · %d machines"), self.machines.count))
+                self.scheduleSnapshot()
+                return
+            }
         } else {
             switch parts[4] {
             case "info":
@@ -339,5 +345,123 @@ internal final class MQTTSubscriber {
                                                         uptime: value.metrics?.uptime_seconds.flatMap { $0.isFinite && $0 >= 0 && $0 <= 1e10 ? $0 : nil }, gpu: gpu))
         }
         self.onSnapshot?(RemoteSnapshot(machines: machines))
+    }
+}
+
+// Deletes one machine by clearing its retained topics over a short-lived connection. Confined to the main queue.
+internal final class MQTTCleaner {
+    private static var active: [ObjectIdentifier: MQTTCleaner] = [:]
+    private let id: String
+    private let completion: (String?) -> Void
+    private var connection: NWConnection?
+    private var buffer = Data()
+    private var acked = Set<UInt16>()
+    private var finished = false
+    private let topics = ["info", "metrics", "status"]
+
+    // The completion receives nil on success or a localized reason.
+    static func delete(id: String, completion: @escaping (String?) -> Void) {
+        let cleaner = MQTTCleaner(id: id, completion: completion)
+        self.active[ObjectIdentifier(cleaner)] = cleaner
+        cleaner.start()
+    }
+
+    private init(id: String, completion: @escaping (String?) -> Void) {
+        self.id = id
+        self.completion = completion
+    }
+
+    private func start() {
+        guard let number = UInt16(MQTTConfig.port), number > 0,
+              let port = NWEndpoint.Port(rawValue: number), !MQTTConfig.host.isEmpty else {
+            self.finish(localizedString("Invalid broker host or port"))
+            return
+        }
+        let connection = NWConnection(host: NWEndpoint.Host(MQTTConfig.host), port: port, using: .tls)
+        self.connection = connection
+        connection.stateUpdateHandler = { [weak self] state in
+            guard let self, !self.finished else { return }
+            switch state {
+            case .ready:
+                self.send(MQTTWire.connect(clientID: MQTTWire.clientID("statsd"), username: MQTTConfig.username,
+                                           password: MQTTConfig.password, will: nil))
+                self.receive(connection)
+            case .failed(let error): self.finish(String(format: localizedString("Connection failed: %@"), error.localizedDescription))
+            case .waiting(let error): self.finish(String(format: localizedString("Unreachable: %@"), error.localizedDescription))
+            default: break
+            }
+        }
+        connection.start(queue: .main)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 15) { [weak self] in
+            self?.finish(localizedString("Timed out"))
+        }
+    }
+
+    private func send(_ packet: Data) {
+        self.connection?.send(content: packet, completion: .contentProcessed { [weak self] error in
+            if error != nil { self?.finish(localizedString("Send failed")) }
+        })
+    }
+
+    private func receive(_ connection: NWConnection) {
+        connection.receive(minimumIncompleteLength: 1, maximumLength: 4096) { [weak self] data, _, complete, error in
+            guard let self, !self.finished else { return }
+            if let data { self.buffer.append(data); self.parse() }
+            guard !self.finished else { return }
+            if complete || error != nil { self.finish(localizedString("Disconnected")) }
+            else { self.receive(connection) }
+        }
+    }
+
+    private func parse() {
+        while !self.finished, self.buffer.count >= 2 {
+            let bytes = [UInt8](self.buffer.prefix(5))
+            var length = 0, multiplier = 1, offset = 1
+            while offset < bytes.count {
+                let byte = bytes[offset]
+                length += Int(byte & 127) * multiplier
+                offset += 1
+                if byte & 128 == 0 { break }
+                multiplier *= 128
+            }
+            guard bytes[offset - 1] & 128 == 0, length <= 4096, self.buffer.count >= offset + length else { return }
+            let header = bytes[0]
+            let payload = [UInt8](self.buffer.dropFirst(offset).prefix(length))
+            self.buffer = Data(self.buffer.dropFirst(offset + length))
+            switch header >> 4 {
+            case 2: self.connack(payload)
+            case 4: self.puback(payload)
+            default: break
+            }
+        }
+    }
+
+    private func connack(_ payload: [UInt8]) {
+        guard payload.count == 2, payload[0] == 0, payload[1] == 0 else {
+            let reasons: [UInt8: String] = [4: localizedString("Username or password rejected"), 5: localizedString("Not authorized")]
+            self.finish(payload.count == 2 ? (reasons[payload[1]] ?? localizedString("Connection refused")) : localizedString("Invalid CONNACK"))
+            return
+        }
+        for (index, topic) in self.topics.enumerated() {
+            self.send(MQTTWire.publish(topic: "stats/v1/machines/\(self.id)/\(topic)", payload: Data(), id: UInt16(index + 1)))
+        }
+    }
+
+    private func puback(_ payload: [UInt8]) {
+        guard payload.count == 2 else { return }
+        self.acked.insert(UInt16(payload[0]) << 8 | UInt16(payload[1]))
+        if self.acked.isSuperset(of: Set(1...UInt16(self.topics.count))) {
+            self.send(MQTTWire.packet(0xE0, []))
+            self.finish(nil)
+        }
+    }
+
+    private func finish(_ reason: String?) {
+        guard !self.finished else { return }
+        self.finished = true
+        self.connection?.cancel()
+        self.connection = nil
+        MQTTCleaner.active[ObjectIdentifier(self)] = nil
+        self.completion(reason)
     }
 }
