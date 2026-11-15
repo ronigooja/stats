@@ -7,6 +7,20 @@ import Kit
 private let maxBytes: Double = 1e18
 
 private struct MQTTMetrics: Decodable {
+    // When the optional IP field is malformed, keep the rest of the metrics usable.
+    struct PublicIP: Decodable {
+        let value: String?
+
+        init(from decoder: Decoder) throws {
+            guard let container = try? decoder.singleValueContainer(),
+                  let text = try? container.decode(String.self), text.utf8.count <= 45,
+                  IPv4Address(text) != nil || IPv6Address(text) != nil else {
+                self.value = nil
+                return
+            }
+            self.value = text
+        }
+    }
     struct Capacity: Decodable {
         let used_bytes: Double
         let total_bytes: Double
@@ -60,6 +74,7 @@ private struct MQTTMetrics: Decodable {
     let load_1m: Double?
     let uptime_seconds: Double?
     let timestamp: String?
+    let public_ip: PublicIP?
 }
 
 // All state and callbacks are confined to the main queue. TLS uses system trust validation.
@@ -342,7 +357,8 @@ internal final class MQTTSubscriber {
                                  platform: value.platform,
                                  modules: RemoteModules(cpu: cpu, ram: ram, disk: disk, disks: value.metrics?.disks?.entries, network: network,
                                                         load: value.metrics?.load_1m.flatMap { $0.isFinite ? $0 : nil },
-                                                        uptime: value.metrics?.uptime_seconds.flatMap { $0.isFinite && $0 >= 0 && $0 <= 1e10 ? $0 : nil }, gpu: gpu))
+                                                        uptime: value.metrics?.uptime_seconds.flatMap { $0.isFinite && $0 >= 0 && $0 <= 1e10 ? $0 : nil }, gpu: gpu,
+                                                        publicIP: value.metrics?.public_ip?.value))
         }
         self.onSnapshot?(RemoteSnapshot(machines: machines))
     }

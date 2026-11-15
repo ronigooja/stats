@@ -598,6 +598,7 @@
 "Reporting off" = "已關閉回報";
 "Saved" = "已儲存";
 "Show machines" = "顯示機器";
+"Public IP" = "公網 IP";
 "Delete machine" = "刪除機器";
 "Delete" = "刪除";
 "Delete %@?" = "刪除 %@？";
