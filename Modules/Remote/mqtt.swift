@@ -75,11 +75,13 @@ private struct MQTTMetrics: Decodable {
     let load_1m: Double?
     let uptime_seconds: Double?
     let timestamp: String?
-    let publicIP: PublicIP?
+    let publicIPv4: PublicIP?
+    let publicIPv6: PublicIP?
 
     private enum CodingKeys: String, CodingKey {
         case cpu_percent, gpu_percent, memory, disk, disks, network, load_1m, uptime_seconds, timestamp
-        case publicIP = "public_ip"
+        case publicIPv4 = "public_ipv4"
+        case publicIPv6 = "public_ipv6"
     }
 }
 
@@ -364,7 +366,8 @@ internal final class MQTTSubscriber {
                                  modules: RemoteModules(cpu: cpu, ram: ram, disk: disk, disks: value.metrics?.disks?.entries, network: network,
                                                         load: value.metrics?.load_1m.flatMap { $0.isFinite ? $0 : nil },
                                                         uptime: value.metrics?.uptime_seconds.flatMap { $0.isFinite && $0 >= 0 && $0 <= 1e10 ? $0 : nil }, gpu: gpu,
-                                                        publicIP: value.metrics?.publicIP?.value))
+                                                        publicIPv4: value.metrics?.publicIPv4?.value.flatMap { IPv4Address($0) != nil ? $0 : nil },
+                                                        publicIPv6: value.metrics?.publicIPv6?.value.flatMap { IPv6Address($0) != nil ? $0 : nil }))
         }
         self.onSnapshot?(RemoteSnapshot(machines: machines))
     }

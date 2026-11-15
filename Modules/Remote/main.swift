@@ -62,8 +62,11 @@ public struct RemoteMachine: Codable {
             let days = Int(uptime) / 86400, hours = Int(uptime) % 86400 / 3600, minutes = Int(uptime) % 3600 / 60
             lines.append("\(localizedString("Uptime")): \(days > 0 ? "\(days)d " : "")\(hours)h \(minutes)m")
         }
-        if let publicIP = self.modules?.publicIP {
-            lines.append("\(localizedString("Public IP")): \(publicIP)")
+        if let ipv4 = self.modules?.publicIPv4 {
+            lines.append("IPv4: \(ipv4)")
+        }
+        if let ipv6 = self.modules?.publicIPv6 {
+            lines.append("IPv6: \(ipv6)")
         }
         return lines.joined(separator: "\n")
     }
@@ -78,7 +81,8 @@ public struct RemoteModules: Codable {
     public let load: Double?
     public let uptime: Double?
     public let gpu: Double?
-    public let publicIP: String?
+    public let publicIPv4: String?
+    public let publicIPv6: String?
     
     public var cpuUsage: Double? {
         guard let cpu = self.cpu else { return nil }
