@@ -37,6 +37,11 @@ internal class Popup: PopupWrapper {
         fatalError("init(coder:) has not been implemented")
     }
     
+    override func appear() {
+        super.appear()
+        self.groups.subviews.compactMap { $0 as? GroupView }.forEach { $0.refreshBars() }
+    }
+
     private func recalculateHeight() {
         let h = self.fittingSize.height
         if h > 0 && self.frame.size.height != h {
@@ -102,6 +107,10 @@ private class GroupView: NSStackView {
         self.layer?.backgroundColor = (isDarkMode ? NSColor(red: 17/255, green: 17/255, blue: 17/255, alpha: 0.25) : NSColor(red: 245/255, green: 245/255, blue: 245/255, alpha: 1)).cgColor
     }
     
+    public func refreshBars() {
+        self.body.subviews.compactMap { $0 as? RemoteItemView }.forEach { $0.refreshBars() }
+    }
+
     public func update(machines: [RemoteMachine]) {
         let ids = Set(machines.map { $0.id })
         
@@ -285,6 +294,11 @@ private class RemoteItemView: NSStackView {
         self.toolTip = machine.details
     }
     
+    public func refreshBars() {
+        // Hidden charts cache values without invalidating their layers; redraw on popup appearance.
+        [self.cpuBar, self.ramBar, self.diskBar].forEach { $0.needsDisplay = true }
+    }
+
     public func setLast(_ isLast: Bool) {
         self.separator.isHidden = isLast
         self.heightConstraint?.constant = 53 + (isLast ? 0 : 1)
