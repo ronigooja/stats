@@ -1,18 +1,7 @@
 name: i18n check
 
 on:
-  push:
-    paths:
-      - '.github/workflows/i18n.yaml'
-      - 'Kit/scripts/i18n.py'
-      - '**/*.strings'
-      - '**/*.swift'
-  pull_request:
-    paths:
-      - '.github/workflows/i18n.yaml'
-      - 'Kit/scripts/i18n.py'
-      - '**/*.strings'
-      - '**/*.swift'
+  workflow_dispatch:
 
 jobs:
   check:

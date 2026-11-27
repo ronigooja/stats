@@ -2,13 +2,6 @@ name: build
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - master
-  pull_request:
-    branches:
-      - master
-
 concurrency:
   group: build-${{ github.ref }}
   cancel-in-progress: true

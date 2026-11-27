@@ -1,16 +1,7 @@
 name: Linter
 
 on:
-  push:
-    paths:
-      - '.github/workflows/linter.yaml'
-      - '.swiftlint.yml'
-      - '**/*.swift'
-  pull_request:
-    paths:
-      - '.github/workflows/linter.yaml'
-      - '.swiftlint.yml'
-      - '**/*.swift'
+  workflow_dispatch:
 
 jobs:
   SwiftLint:

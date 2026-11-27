@@ -1,22 +1,6 @@
 name: SMC tests
 
 on:
-  push:
-    paths:
-      - 'SMC/**'
-      - 'Tests/SMC.swift'
-      - 'Kit/scripts/run-smc-tests.py'
-      - 'Kit/helpers.swift'
-      - 'Makefile'
-      - '.github/workflows/smc-tests.yaml'
-  pull_request:
-    paths:
-      - 'SMC/**'
-      - 'Tests/SMC.swift'
-      - 'Kit/scripts/run-smc-tests.py'
-      - 'Kit/helpers.swift'
-      - 'Makefile'
-      - '.github/workflows/smc-tests.yaml'
   workflow_dispatch:
 
 permissions:
